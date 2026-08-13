@@ -2,7 +2,7 @@
   <img src="https://img.shields.io/badge/Snowflake-29B5E8?style=for-the-badge&logo=snowflake&logoColor=white"/>
   <img src="https://img.shields.io/badge/SnowPro_Core-FF6B35?style=for-the-badge&logo=snowflake&logoColor=white"/>
   <img src="https://img.shields.io/badge/COF--C03-4A90D9?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/Study_Guide-2024-success?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Study_Guide-2026-success?style=for-the-badge"/>
 </p>
 
 <h1 align="center">🎓 SnowPro Core Certification Study Guide</h1>
