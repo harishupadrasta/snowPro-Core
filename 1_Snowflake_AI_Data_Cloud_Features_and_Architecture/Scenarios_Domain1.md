@@ -41,14 +41,14 @@ graph TD
 **Decision Flow:**
 ```mermaid
 graph TD
-    A[Requirements Gathering] --> B{Need column-level security<br/>or row-level policies?}
-    B -->|Yes| C{Need dynamic masking<br/>based on role?}
+    A[Requirements Gathering] --> B{Need column-level security or row-level policies?}
+    B -->|Yes| C{Need dynamic masking based on role?}
     B -->|No| D[Standard Edition]
     C -->|Yes| E[Enterprise Edition minimum]
-    E --> F{Need HIPAA/SOC compliance<br/>or private connectivity?}
+    E --> F{Need HIPAA/SOC compliance or private connectivity?}
     F -->|Yes - regulatory requirement| G[Business Critical]
     F -->|No| H[Enterprise is sufficient]
-    G --> I{Need dedicated infrastructure<br/>or government region?}
+    G --> I{Need dedicated infrastructure or government region?}
     I -->|Yes| J[Virtual Private Snowflake]
     I -->|No| K[Business Critical is sufficient]
 ```
@@ -73,9 +73,9 @@ graph TD
 **Decision Flow:**
 ```mermaid
 graph TD
-    A[Query executed] --> B{Exact same query text<br/>same warehouse, same role?}
+    A[Query executed] --> B{Exact same query text same warehouse, same role?}
     B -->|Yes - identical| C[Result Cache hit - milliseconds]
-    B -->|No - different query| D{Same underlying data<br/>previously scanned?}
+    B -->|No - different query| D{Same underlying data previously scanned?}
     D -->|Yes - data in warehouse memory| E[Local Disk/SSD Cache - faster scan]
     D -->|No - cold data| F[Full table scan from remote storage]
     C --> G[No compute cost - Cloud Services only]
@@ -278,10 +278,10 @@ graph TD
     A[Multi-cluster scaling policy] --> B{Priority: Speed or Cost?}
     B -->|Speed - minimize queue time| C[Standard Policy]
     B -->|Cost - maximize utilization| D[Economy Policy]
-    C --> E[New cluster starts immediately<br/>when query queues]
-    D --> F[New cluster starts only after<br/>sustained load for 6+ minutes]
-    C --> G[Cluster shuts down after 2-3 min<br/>of reduced load]
-    D --> H[Cluster shuts down only after<br/>6+ min of reduced load]
+    C --> E[New cluster starts immediately when query queues]
+    D --> F[New cluster starts only after sustained load for 6+ minutes]
+    C --> G[Cluster shuts down after 2-3 min of reduced load]
+    D --> H[Cluster shuts down only after 6+ min of reduced load]
 ```
 
 **Answer:**
@@ -310,13 +310,13 @@ graph TD
     A --> C[Issue 2: Warehouse suspend/resume]
     A --> D[Issue 3: Excessive data scanning]
     
-    B --> E[Cloud Services Layer<br/>Authentication, metadata, RBAC]
-    C --> F[Compute Layer<br/>Virtual warehouses, execution]
-    D --> G[Storage Layer<br/>Micro-partitions, pruning]
+    B --> E[Cloud Services Layer Authentication, metadata, RBAC]
+    C --> F[Compute Layer Virtual warehouses, execution]
+    D --> G[Storage Layer Micro-partitions, pruning]
     
     E --> H[Working correctly here]
-    F --> I[Auto-resume delay is normal<br/>Set auto-suspend appropriately]
-    G --> J[Check clustering, partition pruning<br/>May need clustering key]
+    F --> I[Auto-resume delay is normal Set auto-suspend appropriately]
+    G --> J[Check clustering, partition pruning May need clustering key]
 ```
 
 **Snowflake Three-Layer Architecture:**
@@ -347,13 +347,13 @@ graph TD
 **Decision Flow:**
 ```mermaid
 graph TD
-    A[Poor pruning despite date filters] --> B{Why are partitions not aligned<br/>with query filters?}
+    A[Poor pruning despite date filters] --> B{Why are partitions not aligned with query filters?}
     B --> C[Data loaded sorted by customer_id]
-    C --> D[Micro-partitions contain many dates<br/>within each partition]
+    C --> D[Micro-partitions contain many dates within each partition]
     D --> E{Options}
-    E --> F[Sort data by transaction_date<br/>before loading]
-    E --> G[Define clustering key on<br/>transaction_date]
-    E --> H[Both: sort on load +<br/>clustering key for maintenance]
+    E --> F[Sort data by transaction_date before loading]
+    E --> G[Define clustering key on transaction_date]
+    E --> H[Both: sort on load + clustering key for maintenance]
     F --> I[Natural clustering from load order]
     G --> J[Automatic reclustering maintains order]
     H --> K[Best approach for this scenario]

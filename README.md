@@ -8,7 +8,7 @@
 <h1 align="center">🎓 SnowPro Core Certification Study Guide</h1>
 
 <p align="center">
-  <strong>Complete preparation guide for the SnowPro Core Certification (COF-C03)</strong><br/>
+  <strong>Complete preparation guide for the SnowPro Core Certification (COF-C03)</strong> 
   Covers all 5 domains with detailed topic files, scenario-based decision guides, and practice quizzes
 </p>
 
@@ -159,6 +159,6 @@ pie title COF-C03 Domain Weights
 ---
 
 <p align="center">
-  <em>Built with the certification-study-guide documentation standard</em><br/>
+  <em>Built with the certification-study-guide documentation standard</em> 
   <strong>Good luck on your SnowPro Core exam! 🎓</strong>
 </p>
