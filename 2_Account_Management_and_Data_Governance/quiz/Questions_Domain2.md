@@ -662,6 +662,328 @@ What is the relationship between a resource monitor's credit quota and the monit
 
 ---
 
+## Bonus: Advanced Scenario Questions
+
+### Question 56
+A company sets a resource monitor to "Suspend" at 90% and "Suspend Immediately" at 100%. At 91% usage, a critical 2-hour data pipeline is running. What happens to the pipeline?
+
+- A) The pipeline is killed immediately at 91%
+- B) The pipeline is allowed to complete because "Suspend" (not "Immediately") lets running queries finish before suspending
+- C) The pipeline is paused and can be resumed later
+- D) Nothing happens until 100% is reached
+
+**Answer: B) The pipeline is allowed to complete because "Suspend" (not "Immediately") lets running queries finish before suspending**
+
+**Explanation:** "Suspend" allows currently executing queries to complete before suspending the warehouse — no new queries are accepted but running ones finish. "Suspend Immediately" kills all running queries without waiting. At 91% (the "Suspend" threshold), the pipeline continues running. Only at 100% ("Suspend Immediately") would it be terminated mid-execution.
+
+**Exam Trap:** The exam tests the difference between Suspend (graceful — running queries finish) and Suspend Immediately (aggressive — kills running queries).
+
+---
+
+### Question 57
+An admin creates a network policy with ALLOWED_IP_LIST = '10.0.0.0/8' and assigns it to the account. They also create a user-level policy for user "JOE" with ALLOWED_IP_LIST = '192.168.1.0/24'. Joe connects from 192.168.1.50. What happens?
+
+- A) Joe connects successfully because his user-level policy allows the IP
+- B) Joe is BLOCKED because the account-level policy does not include 192.168.1.0/24, and account-level takes precedence
+- C) Both policies are evaluated and the most permissive wins
+- D) An error occurs because you cannot have both account and user-level policies
+
+**Answer: B) Joe is BLOCKED because the account-level policy does not include 192.168.1.0/24, and account-level takes precedence**
+
+**Explanation:** When both account-level and user-level network policies exist, the MOST RESTRICTIVE combination applies. The connection must satisfy BOTH policies. Since 192.168.1.50 is not within the account-level 10.0.0.0/8 (it is, actually — 192.168.x.x IS within 10.0.0.0/8... Wait, no — 192.168.x.x is NOT in 10.0.0.0/8). The account-level blocks anything outside 10.0.0.0/8, so Joe is blocked regardless of his user-level policy.
+
+**Exam Trap:** Account-level network policy blocks override user-level allows. The user must pass BOTH checks.
+
+---
+
+### Question 58
+A developer creates a table using the ANALYST role. Later, the Security team wants to apply a masking policy to a column. The SECURITYADMIN attempts to apply the policy but gets a privilege error. What is the issue?
+
+- A) Only ACCOUNTADMIN can apply masking policies
+- B) SECURITYADMIN needs APPLY MASKING POLICY privilege on the account or OWNERSHIP of the table
+- C) Masking policies can only be applied at table creation time
+- D) The ANALYST role must grant permission first
+
+**Answer: B) SECURITYADMIN needs APPLY MASKING POLICY privilege on the account or OWNERSHIP of the table**
+
+**Explanation:** Applying a masking policy requires either OWNERSHIP on the target table/column, or the APPLY MASKING POLICY account-level privilege. SECURITYADMIN doesn't inherently have this — it must be explicitly granted. This is a common oversight since SECURITYADMIN handles security but doesn't automatically have all security-related privileges.
+
+**Exam Trap:** SECURITYADMIN manages grants but doesn't automatically have APPLY MASKING POLICY — it must be explicitly granted.
+
+---
+
+### Question 59
+A company's custom role hierarchy has ANALYST_ROLE granted to SYSADMIN. A new data engineer creates objects using ENGINEER_ROLE but forgets to grant it to SYSADMIN. What problem does this create?
+
+- A) The objects are inaccessible to ACCOUNTADMIN
+- B) ACCOUNTADMIN can access the objects but SYSADMIN cannot, breaking the recommended role hierarchy and making object management difficult
+- C) The objects are automatically dropped after 24 hours
+- D) No problem — all custom roles are automatically granted to SYSADMIN
+
+**Answer: B) ACCOUNTADMIN can access the objects but SYSADMIN cannot, breaking the recommended role hierarchy and making object management difficult**
+
+**Explanation:** Snowflake recommends ALL custom roles be granted to SYSADMIN so that ACCOUNTADMIN (which inherits SYSADMIN) has full visibility. If ENGINEER_ROLE isn't in the hierarchy, SYSADMIN cannot manage those objects without explicitly switching roles. ACCOUNTADMIN can still access them via the MANAGE GRANTS privilege, but the broken hierarchy creates administrative complexity.
+
+**Exam Trap:** Always grant custom roles to SYSADMIN — this is a best practice the exam tests frequently.
+
+---
+
+### Question 60
+A table has DATA_RETENTION_TIME_IN_DAYS = 90. An admin changes it to 0. What happens to the existing 90 days of historical data?
+
+- A) The historical data is retained for the original 90 days then purged
+- B) All historical Time Travel data is immediately purged — past versions are no longer accessible
+- C) The change only affects new modifications going forward
+- D) The system prevents reducing retention to 0 if historical data exists
+
+**Answer: B) All historical Time Travel data is immediately purged — past versions are no longer accessible**
+
+**Explanation:** Setting DATA_RETENTION_TIME_IN_DAYS = 0 immediately purges all existing Time Travel history for that table. Historical micro-partition versions are marked for deletion. You cannot query past states or recover accidentally deleted data. This is irreversible and the exam specifically tests this behavior.
+
+**Exam Trap:** Setting retention to 0 IMMEDIATELY purges history — it doesn't grandfather existing data. This is a destructive operation.
+
+---
+
+### Question 61
+A reader account is created by Provider A for Consumer X. Consumer X tries to access a Marketplace listing from Provider B through the reader account. What happens?
+
+- A) The access works because reader accounts can access any public listing
+- B) The access is DENIED — reader accounts can ONLY access data shared by the provider that created them
+- C) The access works if Provider B approves it
+- D) Consumer X can access it but must pay Provider A for the compute
+
+**Answer: B) The access is DENIED — reader accounts can ONLY access data shared by the provider that created them**
+
+**Explanation:** Reader accounts (managed accounts) are restricted to accessing data shared by the single provider that created them. They cannot access other shares, Marketplace listings, or any other data. The provider also pays for all compute costs in the reader account. This is a frequently tested constraint.
+
+**Exam Trap:** Reader accounts are locked to ONE provider's data. All compute costs are billed to the provider, not the reader account.
+
+---
+
+### Question 62
+A Snowflake account has MFA enabled for all users. An ACCOUNTADMIN user loses their MFA device. They contact support, who resets their MFA. During the reset window, the user logs in without MFA. The security team is auditing logins. Which view shows this login without MFA?
+
+- A) ACCOUNT_USAGE.LOGIN_HISTORY — it records whether MFA was used for each login
+- B) INFORMATION_SCHEMA.LOGIN_HISTORY with an MFA filter
+- C) ACCOUNT_USAGE.SESSIONS view
+- D) This information is not tracked by Snowflake
+
+**Answer: A) ACCOUNT_USAGE.LOGIN_HISTORY — it records whether MFA was used for each login**
+
+**Explanation:** ACCOUNT_USAGE.LOGIN_HISTORY includes details about each authentication event including whether second-factor (MFA) was used. It retains data for 365 days. INFORMATION_SCHEMA.LOGIN_HISTORY only retains 7 days. The SECOND_AUTHENTICATION_FACTOR column shows if MFA was applied for each login.
+
+**Exam Trap:** ACCOUNT_USAGE.LOGIN_HISTORY = 365 days, includes MFA status. INFORMATION_SCHEMA = only 7 days.
+
+---
+
+### Question 63
+A managed access schema contains tables owned by various roles. A table owner (ANALYST_ROLE) tries to grant SELECT on their table to another role. What happens?
+
+- A) The grant succeeds — owners can always grant access to their objects
+- B) The grant FAILS — in managed access schemas, only the schema owner or a role with MANAGE GRANTS can grant privileges
+- C) The grant succeeds but requires approval from ACCOUNTADMIN
+- D) The grant succeeds but is logged as a security event
+
+**Answer: B) The grant FAILS — in managed access schemas, only the schema owner or a role with MANAGE GRANTS can grant privileges**
+
+**Explanation:** Managed access schemas (WITH MANAGED ACCESS) centralize grant control. Object owners CANNOT grant access to their own objects. Only the schema owner or roles with MANAGE GRANTS privilege can manage privileges within the schema. This provides tighter security governance.
+
+**Exam Trap:** Managed access = owners lose grant ability. Know the difference between regular schemas (owners can grant) and managed access schemas.
+
+---
+
+### Question 64
+A company's Snowflake bill shows unexpected Fail-safe storage charges. They have many ETL staging tables that are modified hourly. The tables are permanent. How can they reduce Fail-safe costs?
+
+- A) Set DATA_RETENTION_TIME_IN_DAYS = 0 on staging tables
+- B) Convert staging tables to TRANSIENT tables, which have no Fail-safe period
+- C) Drop and recreate tables daily
+- D) Compress the data more aggressively
+
+**Answer: B) Convert staging tables to TRANSIENT tables, which have no Fail-safe period**
+
+**Explanation:** Transient tables have NO Fail-safe period (and max 1-day Time Travel). For ETL staging data that is frequently modified and doesn't need disaster recovery protection, transient tables eliminate the 7-day Fail-safe storage overhead. Fail-safe is non-configurable for permanent tables — you cannot disable it.
+
+**Exam Trap:** Fail-safe is NON-CONFIGURABLE and applies ONLY to permanent tables. Transient/temporary tables have NO Fail-safe.
+
+---
+
+### Question 65
+A row access policy uses `CURRENT_ROLE()` to filter rows. A user has multiple roles but their primary (current) role is ANALYST. They switch to MANAGER role mid-session. How does the row access policy behave?
+
+- A) The policy uses ANALYST (the role at session start) for the entire session
+- B) The policy dynamically evaluates based on the CURRENT active role — switching to MANAGER immediately changes visible rows
+- C) The policy uses ALL roles the user possesses
+- D) Role switching requires the policy to be re-attached
+
+**Answer: B) The policy dynamically evaluates based on the CURRENT active role — switching to MANAGER immediately changes visible rows**
+
+**Explanation:** Row access policies using CURRENT_ROLE() evaluate at query execution time, not session start. When the user switches their active role (USE ROLE MANAGER), subsequent queries are evaluated with the MANAGER role, potentially showing different rows. This is dynamic and immediate.
+
+**Exam Trap:** Policies evaluate at QUERY TIME with the CURRENT role, not at session creation time.
+
+---
+
+### Question 66
+A company wants to track which specific columns were read by each query for GDPR compliance. Which ACCOUNT_USAGE view provides column-level access tracking?
+
+- A) QUERY_HISTORY
+- B) ACCESS_HISTORY
+- C) COLUMNS view
+- D) LOGIN_HISTORY
+
+**Answer: B) ACCESS_HISTORY**
+
+**Explanation:** ACCOUNT_USAGE.ACCESS_HISTORY provides column-level data access tracking — it records which base tables AND specific columns were accessed (read/written) by each query. This is critical for GDPR Article 30 (records of processing) compliance. QUERY_HISTORY shows the SQL but not which specific columns were accessed.
+
+**Exam Trap:** ACCESS_HISTORY = column-level tracking (what data was accessed). QUERY_HISTORY = statement-level (what SQL was run).
+
+---
+
+### Question 67
+An admin creates a resource monitor with credit_quota = 100 and frequency = MONTHLY. On the 15th of the month, usage is at 95 credits. The admin increases the quota to 200. What happens to the current month's usage tracking?
+
+- A) Usage resets to 0 with the new quota
+- B) Current usage (95) is retained — the account now has 105 credits remaining this month
+- C) The change takes effect only next month
+- D) The monitor must be dropped and recreated
+
+**Answer: B) Current usage (95) is retained — the account now has 105 credits remaining this month**
+
+**Explanation:** Modifying a resource monitor's quota takes effect immediately without resetting the usage counter. The 95 credits already consumed still count. With the new 200-credit quota, there are 105 credits remaining. This allows mid-cycle adjustments without losing tracking. The quota resets at the next frequency boundary (month start).
+
+**Exam Trap:** Changing quota doesn't reset usage — it's a live adjustment to the ceiling, not a counter reset.
+
+---
+
+### Question 68
+A data masking policy is defined as: if CURRENT_ROLE() IN ('ADMIN', 'ANALYST') return val, else return '***'. A view is created by ADMIN that selects the masked column. When PUBLIC queries the view, what do they see?
+
+- A) The actual values because the view was created by ADMIN
+- B) '***' because the masking policy evaluates based on the QUERYING user's role, not the view owner
+- C) An error because PUBLIC cannot query masked columns
+- D) NULL values
+
+**Answer: B) '***' because the masking policy evaluates based on the QUERYING user's role, not the view owner**
+
+**Explanation:** Masking policies are always evaluated at query execution time using the CURRENT_ROLE() of the person RUNNING the query, not the view/object owner. PUBLIC role is not in the allowed list ('ADMIN', 'ANALYST'), so they see masked values. This prevents privilege escalation through views.
+
+**Exam Trap:** Masking policies evaluate with the QUERYING user's role, never the object owner's role. Views don't bypass masking.
+
+---
+
+### Question 69
+An organization needs to prevent their ACCOUNTADMIN from accidentally running expensive queries on production data during daily work. What is the best practice?
+
+- A) Remove USAGE privilege on all warehouses from ACCOUNTADMIN
+- B) Users with ACCOUNTADMIN should set a LOWER default role (like SYSADMIN or a custom role) for daily work, using ACCOUNTADMIN only for administrative tasks
+- C) Create a network policy blocking ACCOUNTADMIN access
+- D) Set ACCOUNTADMIN's default warehouse to X-Small
+
+**Answer: B) Users with ACCOUNTADMIN should set a LOWER default role (like SYSADMIN or a custom role) for daily work, using ACCOUNTADMIN only for administrative tasks**
+
+**Explanation:** Snowflake best practice is to NEVER use ACCOUNTADMIN as a default daily role. Users should have a lower-privilege default role for routine work and switch to ACCOUNTADMIN only for administrative tasks. This follows the principle of least privilege and prevents accidental operations with the highest-privilege role.
+
+**Exam Trap:** ACCOUNTADMIN best practices: don't use as default role, enable MFA, assign to 2+ users, use only for admin tasks.
+
+---
+
+### Question 70
+A security team wants to classify all columns containing email addresses across the entire account. Which Snowflake feature automatically detects and tags sensitive data?
+
+- A) Object Tagging with manual TAG assignment
+- B) Data Classification — Snowflake's automatic classification system that suggests sensitivity categories
+- C) Masking Policy auto-discovery
+- D) Information Schema column scanning
+
+**Answer: B) Data Classification — Snowflake's automatic classification system that suggests sensitivity categories**
+
+**Explanation:** Snowflake's Data Classification feature (Enterprise+) uses system-defined classifiers to automatically analyze column data and suggest sensitivity tags (SEMANTIC_CATEGORY and PRIVACY_CATEGORY). It can identify emails, phone numbers, SSNs, and other PII patterns. Object Tagging is the mechanism to apply tags, but Classification automates the discovery.
+
+**Exam Trap:** Data Classification = automatic detection. Object Tagging = the mechanism to apply/manage tags. They work together.
+
+---
+
+### Question 71
+A warehouse has a resource monitor set to "Notify and Suspend" at 100%. The warehouse is used for Snowpipe loading. What happens to Snowpipe when the warehouse is suspended?
+
+- A) Snowpipe stops loading and files queue up
+- B) Snowpipe is NOT affected — it uses Snowflake-managed serverless compute, not customer warehouses
+- C) Snowpipe continues using the suspended warehouse in a special mode
+- D) Files are rejected and must be re-staged
+
+**Answer: B) Snowpipe is NOT affected — it uses Snowflake-managed serverless compute, not customer warehouses**
+
+**Explanation:** Snowpipe uses Snowflake's serverless compute model, completely independent of customer virtual warehouses. Resource monitors that suspend warehouses have NO impact on Snowpipe loading. Snowpipe costs appear as separate line items, not as warehouse credit consumption.
+
+**Exam Trap:** Snowpipe = serverless (Snowflake-managed compute). Resource monitors on warehouses don't affect Snowpipe.
+
+---
+
+### Question 72
+An admin sets a database-level DATA_RETENTION_TIME_IN_DAYS = 30. A table within that database has DATA_RETENTION_TIME_IN_DAYS = 1. What is the effective retention for that table?
+
+- A) 30 days — database setting overrides table setting
+- B) 1 day — the table-level setting takes precedence (most specific wins)
+- C) 31 days — they are additive
+- D) Whichever is higher (30 days) to ensure maximum protection
+
+**Answer: B) 1 day — the table-level setting takes precedence (most specific wins)**
+
+**Explanation:** Snowflake follows the principle of most-specific-wins for DATA_RETENTION_TIME_IN_DAYS. Object-level settings override container-level settings. The hierarchy is: Account → Database → Schema → Table, with each lower level able to override the parent. The table's explicit 1-day setting overrides the database's 30-day default.
+
+**Exam Trap:** Retention settings follow most-specific-wins hierarchy. Table setting > Schema > Database > Account.
+
+---
+
+### Question 73
+A company creates a custom role called DATA_LOADER and grants it CREATE TABLE, INSERT, and USAGE on a schema. They also grant EXECUTE TASK at the account level. A task created by DATA_LOADER fails with "insufficient privileges." What's missing?
+
+- A) The DATA_LOADER role needs OWNERSHIP of the warehouse
+- B) The DATA_LOADER role needs USAGE on the warehouse specified in the task definition
+- C) Only SYSADMIN can run tasks
+- D) The task needs to be created by ACCOUNTADMIN
+
+**Answer: B) The DATA_LOADER role needs USAGE on the warehouse specified in the task definition**
+
+**Explanation:** To run a task, the role needs: CREATE TASK on schema, EXECUTE TASK at account level, AND USAGE on the warehouse the task uses. Missing USAGE on the warehouse means the task cannot acquire compute resources. This is a common oversight — EXECUTE TASK alone is insufficient without warehouse access.
+
+**Exam Trap:** Tasks need THREE things to run: CREATE TASK (schema), EXECUTE TASK (account), and USAGE (warehouse).
+
+---
+
+### Question 74
+A HIPAA-regulated healthcare company discovers that their account is running on Enterprise edition. They store PHI (Protected Health Information) in Snowflake. Their compliance officer is concerned. What is the correct assessment?
+
+- A) Enterprise edition is compliant for HIPAA as long as data is encrypted
+- B) They must upgrade to Business Critical edition — Snowflake's BAA (Business Associate Agreement) and HIPAA support require Business Critical or higher
+- C) Any edition is HIPAA compliant because all editions use AES-256 encryption
+- D) They need Virtual Private Snowflake for HIPAA
+
+**Answer: B) They must upgrade to Business Critical edition — Snowflake's BAA (Business Associate Agreement) and HIPAA support require Business Critical or higher**
+
+**Explanation:** HIPAA compliance in Snowflake requires Business Critical edition. This is because HIPAA requires a Business Associate Agreement (BAA), which Snowflake only offers for Business Critical and VPS editions. Enterprise edition, despite having encryption, does not include the compliance certifications or BAA needed for HIPAA.
+
+**Exam Trap:** HIPAA/PCI-DSS/HITRUST compliance = Business Critical minimum. Encryption alone doesn't equal compliance.
+
+---
+
+### Question 75
+An admin accidentally grants ACCOUNTADMIN to a service account (used for ETL pipelines). The service account has key-pair authentication but no MFA. What security risks does this create, and what's the immediate fix?
+
+- A) No risk — service accounts don't need MFA
+- B) Critical risk: the service account has full account control with weaker authentication. Immediately REVOKE ACCOUNTADMIN from the service account and use a custom role with minimum required privileges
+- C) The grant will automatically be revoked after 24 hours
+- D) Enable MFA on the service account to resolve the issue
+
+**Answer: B) Critical risk: the service account has full account control with weaker authentication. Immediately REVOKE ACCOUNTADMIN from the service account and use a custom role with minimum required privileges**
+
+**Explanation:** Service accounts with ACCOUNTADMIN can perform any operation including dropping databases, modifying network policies, or granting privileges. Without MFA (which isn't practical for service accounts), this is a serious risk. Best practice: service accounts should use the minimum-privilege custom role needed for their specific tasks.
+
+**Exam Trap:** Never assign ACCOUNTADMIN to service accounts. Use purpose-specific custom roles with minimum required privileges.
+
+---
+
 ### Question 51
 A Snowflake administrator needs to audit all DDL changes (CREATE, ALTER, DROP) made in the last 60 days. Which view should they query?
 
@@ -725,4 +1047,266 @@ What is the recommended best practice for ACCOUNTADMIN usage in Snowflake?
 **Answer: B) Limit its use to administrative tasks, enable MFA, and assign it to at least two users**
 **Explanation:** Snowflake recommends that ACCOUNTADMIN should not be used for daily operations (use lower-privilege roles instead), MFA should be enabled for all ACCOUNTADMIN users, and at least two users should have the role to prevent lockout scenarios. It should not be the default role for any user.
 
+---
+
+## Bonus: Advanced Scenario Questions
+
+### Question 1
+A custom role ANALYST is granted to SYSADMIN. A custom role DATA_ENGINEER is also granted to SYSADMIN. A user has only the DATA_ENGINEER role directly granted to them. Can this user access objects owned by the ANALYST role?
+
+- A) Yes, because both roles are under SYSADMIN
+- B) No, because privilege inheritance flows upward — DATA_ENGINEER does not inherit ANALYST's privileges
+- C) Yes, if they switch to the SYSADMIN role
+- D) Only if secondary roles are enabled
+
+**Answer: B) No, because privilege inheritance flows upward — DATA_ENGINEER does not inherit ANALYST's privileges**
+**Explanation:** Privilege inheritance flows UP the hierarchy, not sideways. SYSADMIN inherits both ANALYST and DATA_ENGINEER privileges, but DATA_ENGINEER does not inherit ANALYST's privileges (they are siblings, not parent-child). The user would need ANALYST or SYSADMIN explicitly granted to access ANALYST-owned objects.
+**Exam Trap:** Sibling roles under the same parent do NOT inherit from each other — inheritance only flows upward.
+---
+
+### Question 2
+A table has both a masking policy on the `salary` column and a row access policy on the table. A user queries the table. In what order are these policies evaluated?
+
+- A) Masking policy first, then row access policy
+- B) Row access policy first (filters rows), then masking policy (masks columns on remaining rows)
+- C) Both are evaluated simultaneously
+- D) Only one policy can be active on a table at a time
+
+**Answer: B) Row access policy first (filters rows), then masking policy (masks columns on remaining rows)**
+**Explanation:** Snowflake evaluates row access policies before masking policies. First, rows that the user is not authorized to see are filtered out. Then, on the remaining visible rows, masking policies are applied to mask column values as appropriate. This is the documented evaluation order.
+**Exam Trap:** Row access policies filter FIRST, masking applies SECOND — not the reverse or simultaneously.
+---
+
+### Question 3
+A network policy at the account level allows IPs in the range 10.0.0.0/8. A separate network policy on a specific user allows only 192.168.1.0/24. The user connects from 10.0.5.50. What happens?
+
+- A) Connection succeeds because the account-level policy allows it
+- B) Connection is blocked because the user-level policy takes precedence and 10.0.5.50 is not in 192.168.1.0/24
+- C) Both policies must allow the connection, so it fails
+- D) An error occurs due to conflicting policies
+
+**Answer: B) Connection is blocked because the user-level policy takes precedence and 10.0.5.50 is not in 192.168.1.0/24**
+**Explanation:** When both an account-level and user-level network policy exist, the user-level policy takes precedence for that specific user. The user-level policy's ALLOWED_IP_LIST is 192.168.1.0/24, and 10.0.5.50 is not in that range, so the connection is denied — regardless of what the account-level policy allows.
+**Exam Trap:** User-level network policies OVERRIDE (not supplement) account-level policies for that user.
+---
+
+### Question 4
+A resource monitor is set with "Suspend" action at 90% and "Suspend Immediately" at 100%. The warehouse hits 90% while executing a critical 3-hour ETL job. What happens to the ETL job?
+
+- A) The ETL job is immediately terminated at 90%
+- B) The ETL job continues to completion because "Suspend" allows running queries to finish; then the warehouse suspends
+- C) The ETL job is paused and can be resumed when the quota resets
+- D) The warehouse suspends after 5 minutes regardless of running queries
+
+**Answer: B) The ETL job continues to completion because "Suspend" allows running queries to finish; then the warehouse suspends**
+**Explanation:** The "Suspend" action (without "Immediately") allows all currently running queries and statements to complete before suspending the warehouse. Only "Suspend Immediately" kills running queries. However, note that the job continuing could push consumption past 100%, triggering the "Suspend Immediately" action which WOULD kill it.
+**Exam Trap:** "Suspend" lets running queries finish; "Suspend Immediately" kills them — but the running query may push past the next threshold.
+---
+
+### Question 5
+A data analyst needs to check how many queries were run on a specific warehouse in the last 30 days. They query INFORMATION_SCHEMA.QUERY_HISTORY but get incomplete results. Why?
+
+- A) INFORMATION_SCHEMA.QUERY_HISTORY only retains data for 7 days
+- B) The analyst doesn't have the required privileges
+- C) INFORMATION_SCHEMA doesn't track warehouse-specific metrics
+- D) The query history view is limited to 10,000 records
+
+**Answer: A) INFORMATION_SCHEMA.QUERY_HISTORY only retains data for 7 days**
+**Explanation:** INFORMATION_SCHEMA views have a maximum retention of 7 days (some views retain even less). For 30-day history, the analyst must use ACCOUNT_USAGE.QUERY_HISTORY, which retains data for 365 days. ACCOUNT_USAGE has 45-minute to 3-hour latency but much longer retention.
+**Exam Trap:** INFORMATION_SCHEMA = 7 days max, real-time. ACCOUNT_USAGE = 365 days, with latency. Choose based on time range needed.
+---
+
+### Question 6
+A DBA runs: `GRANT SELECT ON FUTURE TABLES IN SCHEMA sales.public TO ROLE analyst;`. Then a new table `sales.public.orders` is created. The analyst role can query it. Later, the DBA runs: `REVOKE SELECT ON FUTURE TABLES IN SCHEMA sales.public FROM ROLE analyst;`. Can the analyst still query `sales.public.orders`?
+
+- A) No, revoking future grants removes access from all previously auto-granted tables
+- B) Yes, revoking future grants only affects tables created AFTER the revoke — existing grants remain
+- C) It depends on whether the table was created by the same role
+- D) The analyst loses access after a 24-hour grace period
+
+**Answer: B) Yes, revoking future grants only affects tables created AFTER the revoke — existing grants remain**
+**Explanation:** Revoking a future grant only stops new objects from automatically receiving that grant. It does NOT retroactively remove grants that were already applied to existing objects. To remove access from tables already granted, you must explicitly revoke SELECT on those specific tables or use REVOKE SELECT ON ALL TABLES IN SCHEMA.
+**Exam Trap:** REVOKE on FUTURE grants is forward-looking only — it never claws back already-applied grants.
+---
+
+### Question 7
+In a managed access schema, a user creates a table using the DATA_ENGINEER role. The DATA_ENGINEER role is the object owner. Can DATA_ENGINEER grant SELECT on that table to the ANALYST role?
+
+- A) Yes, object owners can always grant privileges on their objects
+- B) No, in managed access schemas only the schema owner or MANAGE GRANTS holder can grant privileges
+- C) Yes, but only if DATA_ENGINEER also owns the schema
+- D) Only ACCOUNTADMIN can grant privileges in managed access schemas
+
+**Answer: B) No, in managed access schemas only the schema owner or MANAGE GRANTS holder can grant privileges**
+**Explanation:** Managed access schemas (WITH MANAGED ACCESS) centralize access control by removing the object owner's ability to grant privileges. Only the schema owner or a role with MANAGE GRANTS can grant/revoke privileges on objects in that schema. This prevents object creators from bypassing governance.
+**Exam Trap:** Managed access schemas strip object owners of grant ability — this is the entire point of the feature.
+---
+
+### Question 8
+A resource monitor has a monthly quota of 1000 credits. On March 15, the warehouse has consumed 950 credits. The "Notify" action is set at 90% and "Suspend Immediately" at 100%. What notifications have been sent so far?
+
+- A) No notifications because 950 is below 100%
+- B) A notification was sent when consumption crossed 900 credits (90%)
+- C) Notifications are sent at both 90% (900 credits) and at 95% (950 credits)
+- D) Notifications are only sent at the Suspend threshold
+
+**Answer: B) A notification was sent when consumption crossed 900 credits (90%)**
+**Explanation:** The "Notify" action at 90% sends an alert when consumption crosses 90% of the quota (900 credits). Since 950 credits exceeds this threshold, the notification has already been sent. The "Suspend Immediately" action will trigger at 1000 credits (100%). Snowflake sends the notification once per threshold crossing, not continuously.
+**Exam Trap:** Notifications fire once when a threshold is CROSSED — they don't repeat or fire at intermediate values.
+---
+
+### Question 9
+A security team queries ACCOUNT_USAGE.LOGIN_HISTORY and INFORMATION_SCHEMA.LOGIN_HISTORY for the same timeframe (last 2 hours). They notice ACCOUNT_USAGE is missing recent login events that appear in INFORMATION_SCHEMA. Why?
+
+- A) ACCOUNT_USAGE doesn't track login events
+- B) ACCOUNT_USAGE has a latency of up to 2 hours before data appears, while INFORMATION_SCHEMA is real-time
+- C) The security team doesn't have permission to view ACCOUNT_USAGE
+- D) INFORMATION_SCHEMA includes fabricated test entries
+
+**Answer: B) ACCOUNT_USAGE has a latency of up to 2 hours before data appears, while INFORMATION_SCHEMA is real-time**
+**Explanation:** ACCOUNT_USAGE views have a data latency of 45 minutes to 3 hours. Very recent events may not yet appear. INFORMATION_SCHEMA provides near real-time data (no significant latency). For the most recent events, INFORMATION_SCHEMA is more current; for historical analysis beyond 7 days, only ACCOUNT_USAGE has the data.
+**Exam Trap:** ACCOUNT_USAGE latency means recent events are MISSING — use INFORMATION_SCHEMA for real-time, ACCOUNT_USAGE for historical.
+---
+
+### Question 10
+A company grants FUTURE grants on tables in SCHEMA A to ROLE X. They also set regular grants on existing tables in SCHEMA A to ROLE X. A new table is created, but ROLE X cannot query it. What is the most likely cause?
+
+- A) Future grants don't work with managed access schemas
+- B) The future grant was set at the database level, not the schema level, and a schema-level future grant is overriding it with different permissions
+- C) The table was created in a different schema
+- D) Future grants require Enterprise edition
+
+**Answer: B) The future grant was set at the database level, not the schema level, and a schema-level future grant is overriding it with different permissions**
+**Explanation:** When future grants exist at both the database level and schema level for the same object type, the schema-level future grants take precedence and override the database-level ones. If the schema-level future grant doesn't include SELECT for ROLE X but the database-level one does, ROLE X won't get access. This precedence rule is a common source of confusion.
+**Exam Trap:** Schema-level future grants OVERRIDE database-level future grants — they don't combine or add up.
+---
+
+### Question 11
+A user with ACCOUNTADMIN role creates a custom role MARKETING_ADMIN and grants it directly to themselves — but does NOT grant it to SYSADMIN. What governance problem does this create?
+
+- A) No problem — ACCOUNTADMIN can always access everything
+- B) Objects created by MARKETING_ADMIN are invisible to SYSADMIN, breaking the recommended role hierarchy
+- C) MARKETING_ADMIN automatically inherits ACCOUNTADMIN privileges
+- D) The role will be auto-deleted after 30 days of inactivity
+
+**Answer: B) Objects created by MARKETING_ADMIN are invisible to SYSADMIN, breaking the recommended role hierarchy**
+**Explanation:** Snowflake recommends all custom roles be granted to SYSADMIN so that SYSADMIN (and by inheritance, ACCOUNTADMIN) can manage all objects. If MARKETING_ADMIN is not in the hierarchy under SYSADMIN, objects it owns are orphaned from the standard management chain. ACCOUNTADMIN can still access them (has MANAGE GRANTS), but it breaks the intended governance model.
+**Exam Trap:** Custom roles not granted to SYSADMIN create "orphan" branches — Snowflake best practice is to always connect them.
+---
+
+### Question 12
+An organization has MFA enabled for all users. They want to enforce that ACCOUNTADMIN can ONLY be used with MFA authentication — no exceptions. Which Snowflake edition is required for this enforcement?
+
+- A) Standard — MFA is available in all editions
+- B) Enterprise — required for policy-based MFA enforcement
+- C) Business Critical — required for security policies on roles
+- D) All editions support MFA, and MFA enforcement on specific roles is available in all editions
+
+**Answer: D) All editions support MFA, and MFA enforcement on specific roles is available in all editions**
+**Explanation:** MFA is available in all Snowflake editions (Standard and above). Snowflake allows enforcing MFA requirements on users (via user properties). The ability to require MFA for specific users (including those with ACCOUNTADMIN) does not require a specific higher edition. Authentication policies for MFA enforcement are available starting from Standard.
+**Exam Trap:** MFA is ALL editions — don't confuse it with masking policies (Enterprise) or Tri-Secret Secure (Business Critical).
+---
+
+### Question 13
+A masking policy returns the original value for the ANALYST role and '***' for all other roles. A user activates the ANALYST role and creates a view that selects from the masked table. A PUBLIC role user queries the view. What does the PUBLIC user see?
+
+- A) Original values because the view was created by ANALYST
+- B) '***' because masking policies evaluate based on the QUERYING user's role, not the view creator's role
+- C) An error because PUBLIC cannot query views on masked tables
+- D) NULL values
+
+**Answer: B) '***' because masking policies evaluate based on the QUERYING user's role, not the view creator's role**
+**Explanation:** Masking policies are enforced at query execution time based on the active role of the user running the query. The view creator's role is irrelevant — what matters is who is executing the final query. Since PUBLIC is not ANALYST, the masking policy returns '***' regardless of the access path (direct table or through a view).
+**Exam Trap:** Masking evaluates the QUERYING role, not the view/object owner — you cannot bypass masking by creating a view.
+---
+
+### Question 14
+A DBA sets up a resource monitor with "Suspend" at 80% and "Suspend Immediately" at 100%. A multi-cluster warehouse (3 active clusters) hits the 80% threshold. What happens?
+
+- A) Only one cluster suspends
+- B) All clusters are allowed to finish running queries, then the entire warehouse suspends
+- C) The warehouse scales down to MIN_CLUSTER_COUNT
+- D) Only new queries are blocked; existing clusters continue indefinitely
+
+**Answer: B) All clusters are allowed to finish running queries, then the entire warehouse suspends**
+**Explanation:** "Suspend" applies to the entire warehouse, not individual clusters. When the threshold is hit, all running queries across all clusters are allowed to finish, then the entire warehouse (all clusters) suspends. No new queries are accepted. Resource monitors do not interact with multi-cluster scaling — they suspend the whole warehouse.
+**Exam Trap:** Resource monitors suspend the ENTIRE warehouse (all clusters) — they don't interact with scaling policies.
+---
+
+### Question 15
+A company needs to see which columns of which tables were accessed in the last 180 days for GDPR compliance. They query INFORMATION_SCHEMA.ACCESS_HISTORY. What result do they get?
+
+- A) Complete 180-day access history
+- B) No results — ACCESS_HISTORY doesn't exist in INFORMATION_SCHEMA; it only exists in ACCOUNT_USAGE
+- C) Only 7 days of data
+- D) An error because ACCESS_HISTORY requires Business Critical edition
+
+**Answer: B) No results — ACCESS_HISTORY doesn't exist in INFORMATION_SCHEMA; it only exists in ACCOUNT_USAGE**
+**Explanation:** ACCESS_HISTORY is only available in ACCOUNT_USAGE schema (with 365-day retention), NOT in INFORMATION_SCHEMA. INFORMATION_SCHEMA has LOGIN_HISTORY and QUERY_HISTORY among others, but not ACCESS_HISTORY. For 180-day column-level access tracking, you must use ACCOUNT_USAGE.ACCESS_HISTORY.
+**Exam Trap:** Not all views exist in both INFORMATION_SCHEMA and ACCOUNT_USAGE — ACCESS_HISTORY is ACCOUNT_USAGE only.
+---
+
+### Question 16
+Three custom roles exist: ROLE_A, ROLE_B, and ROLE_C. ROLE_A is granted to ROLE_B. ROLE_B is granted to ROLE_C. ROLE_C is granted to SYSADMIN. A user has ROLE_B as their active role. Which privileges does this user have?
+
+- A) Only ROLE_B privileges
+- B) ROLE_A and ROLE_B privileges (ROLE_B inherits from ROLE_A)
+- C) ROLE_A, ROLE_B, and ROLE_C privileges
+- D) ROLE_B and ROLE_C privileges
+
+**Answer: B) ROLE_A and ROLE_B privileges (ROLE_B inherits from ROLE_A)**
+**Explanation:** Privilege inheritance flows UPWARD. ROLE_B inherits ROLE_A's privileges (because ROLE_A is granted to ROLE_B). However, ROLE_B does NOT inherit ROLE_C's privileges — ROLE_C is above ROLE_B in the hierarchy. The user with active ROLE_B gets ROLE_A + ROLE_B privileges. To get ROLE_C privileges, they'd need ROLE_C directly.
+**Exam Trap:** Inheritance flows UP only — a child role's user gets privileges of roles BELOW it, not above.
+---
+
+### Question 17
+A row access policy on `employees` table allows the HR role to see all rows and restricts others to see only their own department's data. The ACCOUNTADMIN role queries the table. What rows does ACCOUNTADMIN see?
+
+- A) All rows because ACCOUNTADMIN bypasses all policies
+- B) Only their department's rows because row access policies apply to ALL roles including ACCOUNTADMIN
+- C) An error because policies cannot restrict ACCOUNTADMIN
+- D) All rows because ACCOUNTADMIN inherits HR role
+
+**Answer: B) Only their department's rows because row access policies apply to ALL roles including ACCOUNTADMIN**
+**Explanation:** Row access policies and masking policies are enforced for ALL roles, including ACCOUNTADMIN. There is no built-in bypass for system-defined roles. If the policy only grants full access to the HR role and restricts others by department, ACCOUNTADMIN sees limited data — unless ACCOUNTADMIN is explicitly included in the policy condition or inherits HR.
+**Exam Trap:** ACCOUNTADMIN does NOT automatically bypass masking or row access policies — it must be explicitly allowed in the policy logic.
+---
+
+### Question 18
+A company needs SSO (Single Sign-On) with SAML 2.0 for their Snowflake account. Which edition is required?
+
+- A) Enterprise or higher
+- B) Business Critical or higher
+- C) All editions support SAML SSO
+- D) Only VPS supports SAML SSO
+
+**Answer: C) All editions support SAML SSO**
+**Explanation:** Federated authentication via SAML 2.0 (SSO) is available in all Snowflake editions, including Standard. Snowflake supports integration with identity providers like Okta, Azure AD, ADFS, and others regardless of edition. MFA is also available in all editions. These are core security features not restricted by edition.
+**Exam Trap:** SSO/SAML and MFA are ALL editions. Don't confuse with edition-specific features like Tri-Secret Secure (Business Critical).
+---
+
+### Question 19
+A managed access schema contains 50 tables. A new data engineer is hired and needs SELECT on all current AND future tables. The schema is owned by the DBA_ROLE. The engineer uses ENGINEER_ROLE. What is the correct approach?
+
+- A) The engineer grants themselves SELECT since they create the tables
+- B) DBA_ROLE (or MANAGE GRANTS holder) must grant SELECT on all existing tables AND set up future grants
+- C) ENGINEER_ROLE can grant itself future access in managed schemas
+- D) Only ACCOUNTADMIN can manage access in managed schemas
+
+**Answer: B) DBA_ROLE (or MANAGE GRANTS holder) must grant SELECT on all existing tables AND set up future grants**
+**Explanation:** In managed access schemas, only the schema owner or a role with MANAGE GRANTS can grant privileges. The engineer cannot self-grant. Two actions are needed: GRANT SELECT ON ALL TABLES for existing objects, and GRANT SELECT ON FUTURE TABLES for objects not yet created. Both must come from the schema owner or MANAGE GRANTS holder.
+**Exam Trap:** Managed access requires TWO actions — existing grants AND future grants — neither of which the object creator can perform.
+---
+
+### Question 20
+An ACCOUNTADMIN configures a resource monitor with Notify at 70%, Suspend at 90%, and Suspend Immediately at 100%. The frequency is "Monthly" starting on the 1st. On the 15th, the warehouse has consumed 92% of the quota. What is the current state?
+
+- A) Warehouse is suspended immediately because it passed 90%
+- B) Warehouse is suspended (running queries were allowed to finish first), and a notification was sent at 70%
+- C) Only a notification was sent at 70%; the warehouse is still running
+- D) Two notifications were sent (at 70% and 90%) and the warehouse is running
+
+**Answer: B) Warehouse is suspended (running queries were allowed to finish first), and a notification was sent at 70%**
+**Explanation:** At 70%, the Notify action sent an alert. At 90%, the Suspend action triggered — all running queries were allowed to complete, then the warehouse suspended. New queries are rejected. The 100% Suspend Immediately threshold wasn't reached. Two separate events occurred: notification at 70% and suspension at 90%.
+**Exam Trap:** Multiple thresholds trigger independently as consumption crosses each — earlier actions don't prevent later ones from firing.
 ---

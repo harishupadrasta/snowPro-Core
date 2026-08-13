@@ -823,6 +823,328 @@ An organization uses Snowflake on AWS. They want their external stage to use the
 
 ---
 
+## Bonus: Advanced Scenario Questions
+
+### Question 66
+A Snowpipe has been running reliably for 3 months. On day 15, a file called `sales_20250601.csv` was loaded successfully. On day 30 (15 days later), the same file is re-uploaded to the stage with updated content. What happens?
+
+- A) Snowpipe detects the content change and reloads the file
+- B) Snowpipe skips the file because the name matches its 14-day metadata — but wait, 15 days have passed so the metadata expired, meaning the file WILL be reloaded
+- C) Snowpipe never reloads files regardless of time elapsed
+- D) Snowpipe loads only the changed rows
+
+**Answer: B) Snowpipe skips the file because the name matches its 14-day metadata — but wait, 15 days have passed so the metadata expired, meaning the file WILL be reloaded**
+
+**Explanation:** Snowpipe retains load metadata for 14 days. After 14 days, the record that `sales_20250601.csv` was loaded is purged. If the file appears again (via re-upload or new event notification) after 14 days, Snowpipe treats it as a new file and loads it — potentially creating duplicates. This is different from COPY INTO's 64-day metadata.
+
+**Exam Trap:** Snowpipe metadata = 14 days. COPY INTO metadata = 64 days. After expiry, re-loaded files cause duplicates.
+
+---
+
+### Question 67
+A data engineer runs COPY INTO with VALIDATION_MODE = 'RETURN_ALL_ERRORS' and discovers 500 data quality issues. They fix the source file and want to load it. They remove VALIDATION_MODE and run COPY INTO again. The command reports "0 files loaded." Why?
+
+- A) VALIDATION_MODE marked the file as loaded in the metadata
+- B) VALIDATION_MODE does NOT load data BUT the file's metadata was still recorded — use FORCE = TRUE to override
+- C) The fixed file has the same name and COPY INTO's load metadata tracks it, but VALIDATION_MODE doesn't record metadata — the issue is something else
+- D) The file must be re-staged after validation
+
+**Answer: B) VALIDATION_MODE does NOT load data BUT the file's metadata was still recorded — use FORCE = TRUE to override**
+
+**Explanation:** Even though VALIDATION_MODE doesn't actually load data, the file IS registered in the load metadata. Subsequent COPY INTO commands see it as "already processed." Use FORCE = TRUE to override the metadata check, or rename the file. This is a common trap in production pipelines.
+
+**Exam Trap:** VALIDATION_MODE doesn't load data but DOES register the file in load metadata. You need FORCE = TRUE for the actual load.
+
+---
+
+### Question 68
+A company's Snowpipe costs are $500/day. They load 50,000 files per day, each approximately 10KB. The actual data volume is only 500MB/day. What is the primary cost driver and fix?
+
+- A) The warehouse is too large — downsize it
+- B) Per-file overhead charges (0.06 credits per 1000 files × 50,000 files = 3 credits/day in overhead alone) — batch small files into fewer larger files before staging
+- C) Network transfer costs from the high file count
+- D) Stage storage costs
+
+**Answer: B) Per-file overhead charges (0.06 credits per 1000 files × 50,000 files = 3 credits/day in overhead alone) — batch small files into fewer larger files before staging**
+
+**Explanation:** Snowpipe charges ~0.06 credits per 1000 files as overhead regardless of file size. With 50,000 tiny files daily, the overhead alone is significant. The fix is to batch files into fewer, larger files (target 100-250MB each). Snowpipe uses serverless compute (no warehouse), so warehouse sizing is irrelevant.
+
+**Exam Trap:** Snowpipe per-file overhead makes many small files expensive. Batch files to 100-250MB to minimize overhead costs.
+
+---
+
+### Question 69
+A COPY INTO command with ON_ERROR = 'SKIP_FILE' loads 100 files. Files 1-50 load successfully. File 51 has a data error. Files 52-100 are error-free. What is the final result?
+
+- A) Only files 1-50 are loaded; files 51-100 are all skipped
+- B) Files 1-50 and 52-100 are loaded (99 files). Only file 51 is skipped
+- C) All 100 files are loaded with error rows from file 51 silently dropped
+- D) The entire operation is rolled back
+
+**Answer: B) Files 1-50 and 52-100 are loaded (99 files). Only file 51 is skipped**
+
+**Explanation:** SKIP_FILE skips only the specific file that contains errors — other error-free files continue loading normally. This differs from ABORT_STATEMENT (rolls back everything) and CONTINUE (loads all valid rows from all files including error files). SKIP_FILE provides a middle ground: skip bad files, load good files.
+
+**Exam Trap:** SKIP_FILE = skip only the problematic file. ABORT_STATEMENT = roll back all files. CONTINUE = load valid rows from ALL files.
+
+---
+
+### Question 70
+A team uses COPY INTO to load Parquet files daily. They want to track which source file each row came from. How should they modify their COPY INTO statement?
+
+- A) Add a METADATA column to the target table and Snowflake auto-populates it
+- B) Include METADATA$FILENAME in the SELECT clause of the COPY INTO command to load the source filename into a table column
+- C) Query COPY_HISTORY after loading to join back the filename
+- D) Parquet files automatically embed filename metadata
+
+**Answer: B) Include METADATA$FILENAME in the SELECT clause of the COPY INTO command to load the source filename into a table column**
+
+**Explanation:** COPY INTO with a SELECT clause can reference METADATA$FILENAME, METADATA$FILE_ROW_NUMBER, METADATA$FILE_CONTENT_KEY, and METADATA$FILE_LAST_MODIFIED. These are loaded into regular table columns for data lineage tracking. Example: `COPY INTO t FROM (SELECT $1:col1, METADATA$FILENAME FROM @stage)`.
+
+**Exam Trap:** METADATA$ pseudo-columns are available ONLY during COPY INTO with a SELECT — they cannot be queried after loading unless stored explicitly.
+
+---
+
+### Question 71
+An ETL pipeline uses COPY INTO with FORCE = TRUE because files are sometimes re-processed intentionally. The team discovers duplicate data in the target table. What is the root cause?
+
+- A) FORCE = TRUE has a bug that doubles row counts
+- B) FORCE = TRUE bypasses load metadata checking, so files that were already successfully loaded are loaded AGAIN, creating duplicates
+- C) The files themselves contain duplicate rows
+- D) Multiple warehouses are loading the same files concurrently
+
+**Answer: B) FORCE = TRUE bypasses load metadata checking, so files that were already successfully loaded are loaded AGAIN, creating duplicates**
+
+**Explanation:** FORCE = TRUE tells COPY INTO to load ALL files regardless of whether they were previously loaded. If the same files remain in the stage and the command runs again, every file is re-loaded, creating exact duplicates. Use FORCE = TRUE only when you're certain you want to re-process, and combine it with PURGE = TRUE or manual file cleanup.
+
+**Exam Trap:** FORCE = TRUE + files remaining in stage = guaranteed duplicates on next run. Always pair with PURGE or file management.
+
+---
+
+### Question 72
+A data engineer creates a Snowpipe and immediately checks its status with SYSTEM$PIPE_STATUS(). The output shows `executionState: "RUNNING"` but no files are being loaded. What is the most likely explanation?
+
+- A) The pipe is broken and needs recreation
+- B) "RUNNING" means the pipe is active and listening — it's waiting for new files/notifications to arrive in the stage
+- C) There's a connectivity issue with the cloud event notification
+- D) The pipe needs to be explicitly started with ALTER PIPE ... RESUME
+
+**Answer: B) "RUNNING" means the pipe is active and listening — it's waiting for new files/notifications to arrive in the stage**
+
+**Explanation:** SYSTEM$PIPE_STATUS() showing "RUNNING" simply means the pipe is active and ready to process files. It doesn't mean files are actively being loaded — it means the pipe is listening for notifications. Files must arrive in the stage (and trigger a notification) for loading to begin. This is normal operational state.
+
+**Exam Trap:** Pipe "RUNNING" = healthy and waiting. It doesn't mean data is flowing — it means the pipe is ready to load when files arrive.
+
+---
+
+### Question 73
+A company loads CSV files where some fields contain the delimiter character (comma) within quoted strings. They're getting column misalignment errors. What file format option resolves this?
+
+- A) ESCAPE = '\\'
+- B) FIELD_OPTIONALLY_ENCLOSED_BY = '"' (set the enclosure character to double-quote)
+- C) FIELD_DELIMITER = '|' (switch delimiter)
+- D) ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE
+
+**Answer: B) FIELD_OPTIONALLY_ENCLOSED_BY = '"' (set the enclosure character to double-quote)**
+
+**Explanation:** FIELD_OPTIONALLY_ENCLOSED_BY tells Snowflake that fields may be enclosed in quotes, and commas within quotes are part of the field value (not delimiters). This is the standard way to handle delimiters within data. ERROR_ON_COLUMN_COUNT_MISMATCH would just suppress the error without fixing the parsing.
+
+**Exam Trap:** Quoted fields containing delimiters require FIELD_OPTIONALLY_ENCLOSED_BY — not escape characters or alternative delimiters.
+
+---
+
+### Question 74
+A table stage (@%my_table) contains 50 files. A data engineer wants to load only files matching the pattern `sales_2025*.csv`. Which COPY INTO option should they use?
+
+- A) FILES = ('sales_2025*.csv')
+- B) PATTERN = '.*sales_2025.*[.]csv'
+- C) WHERE filename LIKE 'sales_2025%'
+- D) INCLUDE_PATTERN = 'sales_2025*'
+
+**Answer: B) PATTERN = '.*sales_2025.*[.]csv'**
+
+**Explanation:** PATTERN accepts a Java-style regular expression to filter files. The regex `'.*sales_2025.*[.]csv'` matches any file containing "sales_2025" with a .csv extension. The FILES option requires explicit file names (no wildcards). There is no WHERE or INCLUDE_PATTERN option for COPY INTO.
+
+**Exam Trap:** PATTERN = regex (for pattern matching). FILES = explicit list (for specific files). They cannot be used together.
+
+---
+
+### Question 75
+A Snowflake account on GCP uses Snowpipe with auto-ingest. What GCP service delivers notifications to Snowpipe?
+
+- A) Cloud Functions
+- B) Pub/Sub subscription
+- C) Cloud Scheduler
+- D) Cloud Storage Triggers
+
+**Answer: B) Pub/Sub subscription**
+
+**Explanation:** On Google Cloud Platform, Snowpipe auto-ingest uses GCS notifications routed through a Pub/Sub subscription that Snowflake manages. When files land in the GCS bucket, a notification is published to the topic, and Snowflake's subscription triggers Snowpipe. AWS uses SQS, Azure uses Event Grid, GCP uses Pub/Sub.
+
+**Exam Trap:** Know the event notification mechanism per cloud: AWS = SQS, Azure = Event Grid, GCP = Pub/Sub.
+
+---
+
+### Question 76
+A data engineer is unloading a 500GB table using COPY INTO @external_stage. The operation produces 31,250 output files (default 16MB each). For downstream processing, they need exactly ONE output file. What change should they make?
+
+- A) Set MAX_FILE_SIZE = 500000000000 (500GB)
+- B) Set SINGLE = TRUE — but be aware this eliminates parallelism and will be significantly slower
+- C) Set PARTITION BY = NONE
+- D) Set FILE_COUNT = 1
+
+**Answer: B) Set SINGLE = TRUE — but be aware this eliminates parallelism and will be significantly slower**
+
+**Explanation:** SINGLE = TRUE forces the unload to produce a single output file. However, this eliminates parallel writing, making the operation much slower for large datasets. For 500GB, this could take significantly longer than the parallel default. There is no FILE_COUNT or PARTITION BY = NONE option.
+
+**Exam Trap:** SINGLE = TRUE = one file but serial (slow). Default = many parallel files (fast). Consider the performance tradeoff for large datasets.
+
+---
+
+### Question 77
+A COPY INTO load command processes 10 CSV files totaling 2GB. The default ON_ERROR (ABORT_STATEMENT) is used. File 8 has a single malformed row. What is the total data loaded?
+
+- A) 7 files worth of data (files 1-7)
+- B) ZERO — ABORT_STATEMENT rolls back ALL files, including the 7 successful ones
+- C) All data except the single bad row
+- D) 8 files (file 8 is partially loaded up to the error row)
+
+**Answer: B) ZERO — ABORT_STATEMENT rolls back ALL files, including the 7 successful ones**
+
+**Explanation:** ABORT_STATEMENT (the default) treats the entire COPY INTO as an atomic transaction. If ANY error occurs in ANY file, the entire operation is rolled back — no data from any file is committed. This is the safest option for data integrity but means one bad row kills the entire batch.
+
+**Exam Trap:** ABORT_STATEMENT = all-or-nothing. Even 1 error in 1 file rolls back all files. For partial loading, use SKIP_FILE or CONTINUE.
+
+---
+
+### Question 78
+A data pipeline loads files via COPY INTO every hour. After 65 days, an identical file from day 1 (same name, same content) reappears in the stage. What happens when COPY INTO runs?
+
+- A) The file is skipped because Snowflake permanently tracks loaded files
+- B) The file is LOADED AGAIN because COPY INTO's 64-day metadata has expired — creating potential duplicates
+- C) Snowflake detects the duplicate content by checksum and skips it regardless of metadata
+- D) The file is quarantined for manual review
+
+**Answer: B) The file is LOADED AGAIN because COPY INTO's 64-day metadata has expired — creating potential duplicates**
+
+**Explanation:** COPY INTO maintains load metadata for exactly 64 days. After 64 days, the tracking record for that file is purged. If the file reappears in the stage, COPY INTO treats it as never-before-seen and loads it again. This can create duplicates. Best practice: remove files from the stage after loading (PURGE = TRUE) or implement idempotent loading.
+
+**Exam Trap:** COPY INTO metadata = 64 days. Snowpipe metadata = 14 days. After expiry, reappearing files are re-loaded.
+
+---
+
+### Question 79
+A team uses Snowpipe Streaming (via the Snowflake Ingest SDK) for sub-second latency loading. Their colleague suggests using traditional Snowpipe (auto-ingest) for the same use case. What is the key difference?
+
+- A) No difference — both achieve sub-second latency
+- B) Snowpipe Streaming writes rows directly into Snowflake tables via API (sub-second latency), while traditional Snowpipe loads files from stages (minutes of latency)
+- C) Snowpipe Streaming is cheaper but slower
+- D) Traditional Snowpipe supports Streaming but requires a file format definition
+
+**Answer: B) Snowpipe Streaming writes rows directly into Snowflake tables via API (sub-second latency), while traditional Snowpipe loads files from stages (minutes of latency)**
+
+**Explanation:** Snowpipe Streaming uses the Ingest SDK to write rows directly into Snowflake without staging files — achieving sub-second latency. Traditional Snowpipe requires files to land in a stage, then loads them (typically 1-2 minute latency). They're different products for different latency requirements.
+
+**Exam Trap:** Snowpipe Streaming = no files, sub-second, SDK-based. Traditional Snowpipe = file-based, minute-level latency, event-driven.
+
+---
+
+### Question 80
+A data engineer wants to validate that their file format and column mapping will work BEFORE actually loading 500GB of data. They run COPY INTO with VALIDATION_MODE = 'RETURN_5_ROWS'. The command succeeds and returns 5 sample rows. They then run COPY INTO without VALIDATION_MODE. What should they be aware of?
+
+- A) The 5 validated rows won't be loaded again
+- B) VALIDATION_MODE registered the file in load metadata — they may need FORCE = TRUE for the actual load
+- C) The actual load will skip the first 5 rows since they were already validated
+- D) No concerns — the actual load will process all rows normally
+
+**Answer: B) VALIDATION_MODE registered the file in load metadata — they may need FORCE = TRUE for the actual load**
+
+**Explanation:** VALIDATION_MODE validates without loading BUT registers the file in the load metadata system. When the engineer runs the actual COPY INTO, the metadata check sees the file as "already processed" and skips it. They need FORCE = TRUE, or they need to use a different file name, or they should purge the metadata by waiting 64 days.
+
+**Exam Trap:** VALIDATION_MODE = no data loaded, but file IS registered in metadata. Use FORCE = TRUE for the real load afterward.
+
+---
+
+### Question 81
+An organization loads semi-structured data (JSON, Parquet) and structured data (CSV) using the same pipeline. For CSV files, COPY INTO with ABORT_STATEMENT default works fine. But for their 2GB JSON files, a single bad record kills the entire load. What approach provides per-record error handling for JSON?
+
+- A) Use ON_ERROR = CONTINUE to skip individual bad JSON records while loading all valid ones
+- B) JSON files cannot be loaded with error handling — they must be fixed beforehand
+- C) Split the JSON file into 1-record-per-file to make SKIP_FILE work at record level
+- D) Use VALIDATE_JSON() as a pre-filter
+
+**Answer: A) Use ON_ERROR = CONTINUE to skip individual bad JSON records while loading all valid ones**
+
+**Explanation:** ON_ERROR = CONTINUE works for JSON loading just as for CSV — it skips individual records (JSON objects) that have parsing errors and loads all valid records. This is the simplest approach for handling occasional bad records in large semi-structured files without blocking the entire load.
+
+**Exam Trap:** ON_ERROR = CONTINUE provides row-level (record-level) error tolerance for ALL file formats, including semi-structured.
+
+---
+
+### Question 82
+A team's COPY INTO statement includes a transformation: `COPY INTO t1 FROM (SELECT $1:id::INT, $1:name::STRING, CURRENT_TIMESTAMP() FROM @stage)`. This adds a load timestamp to each row. Is this valid?
+
+- A) No — COPY INTO does not support SELECT syntax
+- B) No — functions like CURRENT_TIMESTAMP() cannot be used in COPY INTO transformations
+- C) Yes — COPY INTO supports SELECT with column transformations, casting, reordering, and simple functions
+- D) Yes — but only for internal stages, not external stages
+
+**Answer: C) Yes — COPY INTO supports SELECT with column transformations, casting, reordering, and simple functions**
+
+**Explanation:** COPY INTO with a FROM (SELECT ...) clause supports column selection, reordering, casting, omission, and system functions (CURRENT_TIMESTAMP, METADATA$FILENAME, etc.). It does NOT support JOINs, GROUP BY, aggregations, or subqueries. Simple transformations and metadata enrichment are valid.
+
+**Exam Trap:** COPY INTO SELECT supports: casting, reordering, column omission, metadata columns, simple functions. Does NOT support: JOINs, GROUP BY, subqueries.
+
+---
+
+### Question 83
+A data pipeline processes files from an external S3 stage. The data engineer notices that COPY_HISTORY shows a file loaded 3 times on the same day. The FORCE option is NOT set. What could explain this?
+
+- A) The file was modified and re-uploaded with different content but the same name — COPY INTO detects content changes via checksum and reloads
+- B) Three different COPY INTO commands ran with different file format options, each treating the file as new
+- C) A bug in Snowflake's metadata system
+- D) The file was genuinely uploaded, deleted, and re-uploaded 3 times — each re-upload is treated as a new file event
+
+**Answer: A) The file was modified and re-uploaded with different content but the same name — COPY INTO detects content changes via checksum and reloads**
+
+**Explanation:** COPY INTO tracks files by both name AND content hash (checksum/ETag). If a file is re-uploaded with the same name but different content, the metadata system recognizes it as a new version and loads it again. This is intentional — same name + different content = new data to load. This differs from Snowpipe which tracks by name only.
+
+**Exam Trap:** COPY INTO tracks by name + content hash. Same name + different content = reloaded. Snowpipe tracks by name only (14 days).
+
+---
+
+### Question 84
+A company unloads data with PARTITION BY to_date(event_time) and creates date-organized folders in their external stage. They then want to load ONLY yesterday's partition back into a different table. What approach works?
+
+- A) COPY INTO new_table FROM @stage/date=2025-06-15/ — reference the partition path directly in the stage location
+- B) Use PARTITION_FILTER = 'yesterday' in COPY INTO
+- C) Query the external stage with a WHERE clause
+- D) Use SELECT FROM @stage WHERE $1:event_date = yesterday
+
+**Answer: A) COPY INTO new_table FROM @stage/date=2025-06-15/ — reference the partition path directly in the stage location**
+
+**Explanation:** PARTITION BY during unload creates a folder structure (e.g., /date=2025-06-15/). To load a specific partition, simply reference the path in the stage URL. COPY INTO can target a subfolder within a stage. There is no PARTITION_FILTER option. This is a common and efficient pattern for incremental processing.
+
+**Exam Trap:** Unloaded partition folders can be directly referenced as stage paths in COPY INTO — no special filtering needed.
+
+---
+
+### Question 85
+A Snowpipe has been processing files for 6 months. A new requirement needs the pipe's COPY INTO statement to include a new transformation (adding a computed column). The engineer runs ALTER PIPE to change the COPY statement. What happens?
+
+- A) The change takes effect immediately for new files
+- B) ALTER PIPE cannot modify the COPY statement — the pipe must be dropped and recreated (or CREATE OR REPLACE PIPE)
+- C) The pipe pauses automatically and requires manual resume after the change
+- D) Only the file format portion of COPY can be altered
+
+**Answer: B) ALTER PIPE cannot modify the COPY statement — the pipe must be dropped and recreated (or CREATE OR REPLACE PIPE)**
+
+**Explanation:** The COPY INTO definition within a pipe is immutable — it cannot be changed via ALTER PIPE. ALTER PIPE can only modify properties like comments or PIPE_EXECUTION_PAUSED. To change the COPY logic, you must DROP and CREATE the pipe again (or use CREATE OR REPLACE PIPE). Consider pausing first to avoid losing in-flight files.
+
+**Exam Trap:** Pipe COPY statements are immutable. ALTER PIPE = properties only. Changing the COPY = drop/recreate the pipe.
+
+---
+
 ### Question 58
 What function can you use to validate previously loaded data and get error details after a COPY INTO operation completes?
 
@@ -934,3 +1256,244 @@ A financial services company needs to unload sensitive customer data to a partne
 **Explanation:** For external stages, you can configure client-side encryption by specifying a MASTER_KEY in the stage's encryption settings. This encrypts files before they leave Snowflake. For internal stages, files are automatically encrypted with 128-bit or 256-bit keys. The ENCRYPTION option on the stage definition controls this behavior.
 
 ---
+
+## Bonus: Advanced Scenario Questions
+
+### Question 1
+A data engineer runs COPY INTO with ON_ERROR = 'CONTINUE' to load a 2GB CSV file. After loading, they discover 50,000 rows were skipped but need to identify the specific errors. Which function should they call and what parameter is required?
+- A) VALIDATE(table_name, JOB_ID => '<query_id>') using the COPY INTO query ID
+- B) COPY_HISTORY() filtered by table name and time range
+- C) SYSTEM$GET_LOAD_ERRORS(table_name)
+- D) SELECT * FROM INFORMATION_SCHEMA.LOAD_ERRORS
+
+**Answer: A) VALIDATE(table_name, JOB_ID => '<query_id>') using the COPY INTO query ID**
+**Explanation:** The VALIDATE() table function returns detailed error information for a specific COPY INTO execution identified by its query ID. COPY_HISTORY shows summary information but not individual row-level errors.
+**Exam Trap:** VALIDATE() requires the JOB_ID of the COPY INTO statement, not the table name alone — many candidates forget to capture the query ID.
+---
+
+### Question 2
+A Snowpipe has been running for 15 days. On day 15, an operations team member accidentally re-uploads a file that was originally loaded on day 1 with the same filename but updated content. What happens?
+- A) Snowpipe reloads the file because the content hash changed
+- B) Snowpipe skips the file because the filename matches its 14-day metadata
+- C) Snowpipe loads the file because the 14-day metadata has expired for that file
+- D) Snowpipe throws a duplicate file error
+
+**Answer: C) Snowpipe loads the file because the 14-day metadata has expired for that file**
+**Explanation:** Snowpipe retains load metadata for only 14 days. After 14 days, it has no record of the original file, so the re-uploaded file is treated as new and loaded again, potentially causing duplicates.
+**Exam Trap:** COPY INTO metadata lasts 64 days, but Snowpipe metadata is only 14 days — candidates often confuse these two retention periods.
+---
+
+### Question 3
+A team needs to load IoT sensor data arriving every 30 seconds as individual 5KB JSON files into Snowflake with minimal latency. They estimate 2,880 files per day. Which loading strategy minimizes cost while maintaining sub-5-minute latency?
+- A) Snowpipe auto-ingest on each file arrival
+- B) A scheduled COPY INTO task running every 5 minutes
+- C) Snowpipe Streaming API with direct row-level inserts
+- D) Batch files into 100MB aggregates using an external ETL tool, then use COPY INTO
+
+**Answer: C) Snowpipe Streaming API with direct row-level inserts**
+**Explanation:** Snowpipe Streaming (via the Snowflake Ingest SDK) writes rows directly into Snowflake tables without staging files, avoiding per-file overhead charges. For many tiny files with low-latency requirements, it's more cost-effective than traditional Snowpipe (which charges per-file overhead).
+**Exam Trap:** Snowpipe auto-ingest works but the per-file overhead on 2,880 tiny files daily adds up — candidates must distinguish between file-based Snowpipe and Streaming Snowpipe.
+---
+
+### Question 4
+A data engineer sets VALIDATION_MODE = 'RETURN_5_ROWS' in their COPY INTO command. The first 5 rows parse successfully. They then remove VALIDATION_MODE and run the same COPY INTO. The load fails on row 5001 with a data type error. Why didn't VALIDATION_MODE catch this?
+- A) VALIDATION_MODE only validates the header row
+- B) RETURN_n_ROWS only validates the first n rows — errors beyond row 5 were not checked
+- C) VALIDATION_MODE checks formatting only, not data types
+- D) The file was modified between the validation and load runs
+
+**Answer: B) RETURN_n_ROWS only validates the first n rows — errors beyond row 5 were not checked**
+**Explanation:** RETURN_n_ROWS validates exactly the specified number of rows from the beginning of the file. It does not scan the entire file. For full validation, use RETURN_ERRORS or RETURN_ALL_ERRORS which scans every row.
+**Exam Trap:** RETURN_n_ROWS gives false confidence if errors are in later rows — always use RETURN_ALL_ERRORS for production validation.
+---
+
+### Question 5
+A company has data in GCS and needs both ad-hoc analyst loading (infrequent, large batches) and real-time pipeline loading from the same bucket. They create one external stage. Which combination is correct?
+- A) One external stage used by both COPY INTO (ad-hoc) and a Snowpipe with AUTO_INGEST=TRUE (real-time), with GCS Pub/Sub notifications
+- B) Two external stages required — one for COPY INTO and one for Snowpipe
+- C) One external stage for COPY INTO, plus Snowpipe REST API calls for real-time
+- D) Both A and C are valid approaches
+
+**Answer: D) Both A and C are valid approaches**
+**Explanation:** A single external stage can serve both COPY INTO and Snowpipe. Auto-ingest uses GCS Pub/Sub notifications, while the REST API approach uses programmatic notification. Both can coexist on the same stage with different pipe definitions.
+**Exam Trap:** GCS uses Pub/Sub (not SQS or Event Grid) — candidates must know the cloud-specific notification mechanism for each provider.
+---
+
+### Question 6
+A COPY INTO command specifies SIZE_LIMIT = 500000000 (500MB). The stage contains files: A (200MB), B (200MB), C (200MB), D (200MB). How many files are loaded?
+- A) 2 files (A and B = 400MB, under limit)
+- B) 3 files (A + B + C = 600MB, but C is included because it started before threshold)
+- C) All 4 files
+- D) 3 files (once aggregate exceeds 500MB after including C, loading stops — D is excluded)
+
+**Answer: D) 3 files (once aggregate exceeds 500MB after including C, loading stops — D is excluded)**
+**Explanation:** SIZE_LIMIT includes whole files until the cumulative size exceeds the threshold. Files A+B = 400MB (under limit, continue), A+B+C = 600MB (exceeds 500MB limit, stop). File C is included because it was committed before the threshold check. File D is not loaded.
+**Exam Trap:** SIZE_LIMIT does not split files — it includes complete files and stops AFTER exceeding the threshold, not before.
+---
+
+### Question 7
+A table stage (@%my_table) is being used for loading. The data engineer wants to set a default file format on the table stage. What happens?
+- A) ALTER STAGE @%my_table SET FILE_FORMAT = (TYPE=CSV) succeeds
+- B) The command fails — table stages do not support file format options in their definition
+- C) File format is inherited from the table's schema default
+- D) You must specify file format in the CREATE TABLE statement
+
+**Answer: B) The command fails — table stages do not support file format options in their definition**
+**Explanation:** Table stages cannot be altered independently — they don't support setting file format options, unlike named stages. You must specify the file format directly in the COPY INTO command or use a named file format object referenced in the COPY INTO.
+**Exam Trap:** Table stages (@%) are convenient but limited — no ALTER, no file format defaults, no sharing between tables.
+---
+
+### Question 8
+A data engineer configures Snowpipe auto-ingest on AWS S3. They create the pipe, set up the SQS notification, and confirm files are landing in S3. But no data is appearing in the target table. What is the MOST likely cause?
+- A) The pipe is in a PAUSED state and needs ALTER PIPE ... SET PIPE_EXECUTION_PAUSED = FALSE
+- B) The S3 event notification is pointing to the wrong SQS queue ARN
+- C) The IAM role doesn't have permissions on the S3 bucket
+- D) All of the above are possible, but B is most commonly missed
+
+**Answer: D) All of the above are possible, but B is most commonly missed**
+**Explanation:** The most common auto-ingest failures are: (1) pipe created in paused state, (2) SQS notification ARN mismatch (must use the queue ARN from SHOW PIPES, not a custom queue), (3) IAM permission issues. The SQS ARN must match exactly what Snowflake provides via SYSTEM$PIPE_STATUS or SHOW PIPES.
+**Exam Trap:** The SQS queue is Snowflake-managed — you configure S3 to notify Snowflake's queue, not your own.
+---
+
+### Question 9
+A COPY INTO uses a SELECT clause to transform data during load: `COPY INTO target FROM (SELECT $1, $2::DATE, UPPER($3) FROM @stage)`. The engineer also wants to filter rows where $4 = 'ACTIVE'. Is this possible?
+- A) No — COPY INTO transformations only support column selection and casting, not WHERE filters
+- B) Yes — add WHERE $4 = 'ACTIVE' to the subquery
+- C) No — any filtering must be done post-load
+- D) Yes, but only with ON_ERROR = 'CONTINUE'
+
+**Answer: B) Yes — add WHERE $4 = 'ACTIVE' to the subquery**
+**Explanation:** COPY INTO with a SELECT subquery supports column reordering, casting, functions (like UPPER), and WHERE clause filtering. However, it does NOT support JOINs, GROUP BY, ORDER BY, LIMIT, or multiple tables in the FROM clause.
+**Exam Trap:** COPY INTO transformations are more capable than many assume — column expressions, CASE, CAST, and WHERE all work, but no JOINs or aggregations.
+---
+
+### Question 10
+A data pipeline loads CSV files where some fields contain the delimiter character (comma) within quoted strings. The load fails with "too many columns" errors. Which file format option resolves this?
+- A) FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+- B) ESCAPE_UNENCLOSED_FIELD = '\\'
+- C) FIELD_DELIMITER = '|' (change delimiter)
+- D) TRIM_SPACE = TRUE
+
+**Answer: A) FIELD_OPTIONALLY_ENCLOSED_BY = '"'**
+**Explanation:** Setting FIELD_OPTIONALLY_ENCLOSED_BY = '"' tells Snowflake that field values may be enclosed in double quotes, and commas within quotes should not be treated as delimiters. This is the standard approach for RFC-compliant CSV parsing.
+**Exam Trap:** The default is FIELD_OPTIONALLY_ENCLOSED_BY = NONE — Snowflake does NOT assume quote-enclosed fields by default, unlike many other tools.
+---
+
+### Question 11
+A user stage (@~) contains files from multiple projects. A data engineer wants to organize them into folders. Can they create subdirectories in a user stage?
+- A) Yes — use PUT with path prefixes like @~/project_a/file.csv
+- B) No — user stages are flat and do not support directories
+- C) Yes, but only via the Snowflake web UI
+- D) Only named stages support directories
+
+**Answer: A) Yes — use PUT with path prefixes like @~/project_a/file.csv**
+**Explanation:** All internal stages (user, table, named) support path prefixes that simulate directory structures. You can PUT files with paths like @~/folder/subfolder/file.csv. These aren't true filesystem directories but virtual path prefixes.
+**Exam Trap:** The path is part of the filename — LIST @~ shows the full path including prefixes; you reference them in COPY INTO with the full path.
+---
+
+### Question 12
+A company loads the same set of files using COPY INTO every day as a safety measure. After 64 days, they notice duplicate data appearing. Why?
+- A) The Time Travel retention expired, resetting load metadata
+- B) COPY INTO load metadata expired after 64 days, so files are treated as new
+- C) The FORCE = TRUE option was accidentally set
+- D) The files were modified, changing their checksum
+
+**Answer: B) COPY INTO load metadata expired after 64 days, so files are treated as new**
+**Explanation:** COPY INTO tracks loaded files for 64 days via load metadata. After 64 days, if the same files are still in the stage, COPY INTO has no record of them and loads them again. Solution: either PURGE files after loading or design pipelines that don't re-present files after 64 days.
+**Exam Trap:** 64-day metadata expiry is a common cause of production duplicates — always PURGE or move files out of the stage after loading.
+---
+
+### Question 13
+A data engineer needs to load a 50GB Parquet file from S3 into a structured Snowflake table (not VARIANT). They want each Parquet column mapped to a corresponding table column. What is the correct approach?
+- A) COPY INTO target FROM @stage MATCH_BY_COLUMN_NAME = 'CASE_INSENSITIVE'
+- B) COPY INTO target FROM (SELECT $1:col1::INT, $1:col2::STRING FROM @stage)
+- C) Both A and B are valid approaches
+- D) Parquet files must always load into a single VARIANT column first
+
+**Answer: C) Both A and B are valid approaches**
+**Explanation:** MATCH_BY_COLUMN_NAME automatically maps Parquet columns to table columns by name. Alternatively, a SELECT with explicit column extraction from $1 (the VARIANT representation) with casting achieves the same result. The first approach is simpler; the second gives more control over transformations.
+**Exam Trap:** D is false — Parquet does NOT require VARIANT; direct column mapping has been supported since the MATCH_BY_COLUMN_NAME feature.
+---
+
+### Question 14
+A Snowpipe is configured with AUTO_INGEST=TRUE on an Azure external stage. The notification uses Event Grid. A new file lands in Blob Storage but is not loaded after 10 minutes. SYSTEM$PIPE_STATUS shows executionState = 'RUNNING' and pendingFileCount = 0. What does this indicate?
+- A) The pipe is working but the file is too large to process
+- B) The Event Grid notification never reached Snowflake — the file wasn't detected
+- C) The file was loaded but into the wrong table
+- D) The pipe needs to be recreated
+
+**Answer: B) The Event Grid notification never reached Snowflake — the file wasn't detected**
+**Explanation:** pendingFileCount = 0 with executionState = 'RUNNING' means the pipe is active but has no files queued. The event notification likely failed — check Event Grid subscription configuration, storage account event routing, and that the notification endpoint matches Snowflake's integration.
+**Exam Trap:** SYSTEM$PIPE_STATUS is essential for debugging — pendingFileCount = 0 means notification failure, not pipe failure.
+---
+
+### Question 15
+A COPY INTO command specifies PURGE = TRUE. The load encounters errors on 3 out of 10 files with ON_ERROR = 'SKIP_FILE'. What happens to the files?
+- A) All 10 files are purged (deleted from stage)
+- B) Only the 7 successfully loaded files are purged; the 3 error files remain
+- C) No files are purged because some files had errors
+- D) All files are purged and errors are logged to an error table
+
+**Answer: B) Only the 7 successfully loaded files are purged; the 3 error files remain**
+**Explanation:** PURGE = TRUE only removes files that were successfully loaded. Files that were skipped due to errors remain in the stage for investigation and retry. This behavior ensures you don't lose data that failed to load.
+**Exam Trap:** PURGE is per-file, not all-or-nothing — only successful files are removed.
+---
+
+### Question 16
+A team uses PUT to upload a 1GB file from their local machine. The upload fails repeatedly at 80% completion. What PUT option should they adjust?
+- A) PARALLEL = 1 (reduce parallelism to avoid timeout)
+- B) AUTO_COMPRESS = FALSE (skip compression to reduce processing time)
+- C) OVERWRITE = TRUE (ensure partial uploads are replaced)
+- D) Reduce the file size to under 250MB before uploading
+
+**Answer: D) Reduce the file size to under 250MB before uploading**
+**Explanation:** PUT uploads large files by splitting them into chunks, but network instability can still cause failures on very large files. Splitting the source file into smaller pieces (100-250MB recommended) improves upload reliability and subsequent COPY INTO parallelism.
+**Exam Trap:** PUT and GET only work via SnowSQL, JDBC, or ODBC — they are unavailable through the web UI or REST API.
+---
+
+### Question 17
+A company loads JSON data with STRIP_OUTER_ARRAY = TRUE. Their file contains: `[{"id":1},{"id":2},{"id":3}]`. After loading, they find only 1 row in the table. What went wrong?
+- A) The file was loaded without STRIP_OUTER_ARRAY in a previous run, and metadata is preventing reload
+- B) The JSON is invalid
+- C) They loaded into a VARIANT column and the entire array became one row — they forgot the STRIP_OUTER_ARRAY option in the actual load (only had it in file format definition but not the stage)
+- D) The file has a BOM character preventing proper parsing
+
+**Answer: C) They loaded into a VARIANT column and the entire array became one row — they forgot the STRIP_OUTER_ARRAY option in the actual load (only had it in file format definition but not the stage)**
+**Explanation:** Without STRIP_OUTER_ARRAY = TRUE, the entire JSON array [{"id":1},{"id":2},{"id":3}] is loaded as a single VARIANT value (one row). The option must be active in the file format being used by the COPY INTO command.
+**Exam Trap:** Always verify which file format object is actually being applied — stage default, named format, or inline options can override each other.
+---
+
+### Question 18
+An external stage is defined with a storage integration pointing to s3://bucket/data/. A COPY INTO references this stage with path @ext_stage/2024/january/. What is the full S3 path being accessed?
+- A) s3://bucket/data/2024/january/
+- B) s3://bucket/2024/january/
+- C) s3://bucket/data/ext_stage/2024/january/
+- D) s3://2024/january/
+
+**Answer: A) s3://bucket/data/2024/january/**
+**Explanation:** The stage URL provides the base path (s3://bucket/data/), and the path specified after the stage name in COPY INTO is appended to it. So @ext_stage/2024/january/ resolves to s3://bucket/data/2024/january/.
+**Exam Trap:** The path in COPY INTO is relative to the stage's URL — it doesn't replace it.
+---
+
+### Question 19
+A data pipeline uses COPY INTO with FORCE = TRUE to reload corrected files. After the reload, they discover duplicate records because the original (incorrect) data was not removed first. What is the correct procedure?
+- A) Use COPY INTO with FORCE = TRUE and TRUNCATECOLUMNS = TRUE
+- B) TRUNCATE the target table before running COPY INTO with FORCE = TRUE
+- C) DELETE rows from the target table that match the file's timestamp, then COPY INTO with FORCE = TRUE
+- D) Both B and C are valid, depending on whether a full or partial reload is needed
+
+**Answer: D) Both B and C are valid, depending on whether a full or partial reload is needed**
+**Explanation:** FORCE = TRUE bypasses duplicate detection but doesn't remove existing data. For a full reload, TRUNCATE first. For a partial correction, DELETE the affected rows first. FORCE alone always adds rows — it never replaces.
+**Exam Trap:** FORCE = TRUE is not an "overwrite" — it's "load regardless of metadata." It always INSERTs, never UPDATEs or DELETEs.
+---
+
+### Question 20
+A team runs COPY INTO from an external stage referencing 1000 files. They use PATTERN = '.*2024.*[.]parquet' to filter. Only 50 files match the pattern. How does this affect performance compared to using the FILES option with the 50 filenames explicitly listed?
+- A) PATTERN is faster because it uses server-side regex filtering
+- B) FILES is faster because PATTERN requires listing all 1000 files first to apply the regex
+- C) They perform identically
+- D) FILES is faster for small numbers of files; PATTERN is faster for large matches
+
+**Answer: B) FILES is faster because PATTERN requires listing all 1000 files first to apply the regex**
+**Explanation:** PATTERN triggers a LIST operation on the stage to identify matching files, which adds overhead proportional to the total number of files. FILES with explicit names skips the listing step entirely. For stages with many files but few matches, FILES is more efficient.
+**Exam Trap:** PATTERN convenience comes at a cost — on stages with millions of files, the LIST operation itself can be slow.

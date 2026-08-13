@@ -722,3 +722,570 @@ D) It supports more complex transformations
 
 **Answer: B)**  
 **Explanation:** Dynamic Tables are declarative — you write a SELECT defining the desired state, and Snowflake automatically determines when and how to incrementally refresh it (based on `TARGET_LAG`). Streams + Tasks are imperative — you must design the CDC logic, schedule, and error handling yourself. Dynamic Tables simplify pipeline development at the cost of some control.
+
+---
+
+## Bonus: Advanced Scenario Questions
+
+### Question 1
+A data engineer examines the Query Profile for a slow query and sees: "Bytes Spilled to Local Storage: 12GB" and "Bytes Spilled to Remote Storage: 45GB." The warehouse is MEDIUM. What is the BEST remediation?
+- A) Add a clustering key to the target table
+- B) Scale UP the warehouse to LARGE or XLARGE to increase memory
+- C) Scale OUT by adding more clusters
+- D) Rewrite the query to use a subquery instead of a CTE
+
+**Answer: B) Scale UP the warehouse to LARGE or XLARGE to increase memory**
+**Explanation:** Remote spilling indicates severe memory pressure — the query exhausted both memory and local SSD, spilling to remote cloud storage (S3/Blob). Scaling UP adds more memory per node. Scaling OUT (multi-cluster) helps concurrency, not single-query memory. Clustering helps pruning, not memory.
+**Exam Trap:** Local spilling is moderate concern; REMOTE spilling is severe — always prioritize fixing remote spills by scaling up.
+---
+
+### Question 2
+A stream on table `orders` has DATA_RETENTION_TIME_IN_DAYS = 1 on the source table. The stream hasn't been consumed in 36 hours. A task attempts to read from the stream. What happens?
+- A) The task reads empty results because the stream auto-clears after 24 hours
+- B) The stream is stale — the query fails with an error indicating the stream cannot access historical data
+- C) The task reads only changes from the last 24 hours, losing earlier changes
+- D) The stream remains valid because stream offsets are independent of Time Travel
+
+**Answer: B) The stream is stale — the query fails with an error indicating the stream cannot access historical data**
+**Explanation:** A stream's offset requires access to the table's historical data via Time Travel. If DATA_RETENTION_TIME_IN_DAYS = 1 and the stream hasn't been consumed in 36 hours, the offset points beyond the 1-day retention — the stream is stale and unusable. You must recreate the stream and perform a full reconciliation.
+**Exam Trap:** Stream staleness is tied to the SOURCE TABLE's Time Travel retention, not the stream's creation date — always ensure retention exceeds your maximum consumption interval.
+---
+
+### Question 3
+A MERGE statement targets `dim_customer` from staging table `stg_customer`. The staging table has two rows with customer_id = 'C001' — one from 9:00 AM and one from 9:05 AM. The MERGE matches on customer_id. What occurs?
+- A) The 9:05 AM record wins (last write wins)
+- B) The MERGE fails with a non-deterministic error
+- C) Both rows are applied sequentially
+- D) Only the 9:00 AM record is applied (first match wins)
+
+**Answer: B) The MERGE fails with a non-deterministic error**
+**Explanation:** When multiple source rows match the same target row, Snowflake cannot determine which update to apply and raises an error: "Join in MERGE produces nondeterministic results." Deduplicate the source first using QUALIFY ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY timestamp DESC) = 1.
+**Exam Trap:** The fix is to deduplicate BEFORE the MERGE, not to add ORDER BY to the MERGE itself (which isn't supported).
+---
+
+### Question 4
+A developer wants to recover a table to its state just BEFORE an accidental UPDATE (query ID: '01abc123'). They write: `CREATE TABLE recovered AS SELECT * FROM my_table AT(STATEMENT => '01abc123')`. Is this correct?
+- A) Yes — AT includes the state after the statement, which is what they want
+- B) No — they should use BEFORE(STATEMENT => '01abc123') to get the state before the UPDATE
+- C) No — AT(STATEMENT) is not valid; only AT(TIMESTAMP) works
+- D) Yes — but they should use CLONE instead of CREATE TABLE AS SELECT
+
+**Answer: B) No — they should use BEFORE(STATEMENT => '01abc123') to get the state before the UPDATE**
+**Explanation:** AT(STATEMENT => id) returns the table state AFTER that statement executed (including its changes). BEFORE(STATEMENT => id) returns the state immediately BEFORE the statement — which is what's needed for recovery. Using AT would give them the already-corrupted state.
+**Exam Trap:** AT = inclusive (after the statement); BEFORE = exclusive (before the statement). For recovery from a bad DML, always use BEFORE.
+---
+
+### Question 5
+A table contains JSON arrays nested two levels deep: `{"departments": [{"name": "Sales", "employees": [{"id": 1}, {"id": 2}]}]}`. A query uses a single FLATTEN on `data:departments`. How many rows does it produce per source row, and can employee IDs be accessed?
+- A) One row per department; employee IDs require a second FLATTEN on value:employees
+- B) One row per employee; single FLATTEN auto-expands nested arrays
+- C) One row per source row; FLATTEN on an object key returns the object, not array elements
+- D) An error — you must specify the path to the inner array directly
+
+**Answer: A) One row per department; employee IDs require a second FLATTEN on value:employees**
+**Explanation:** FLATTEN only expands one level of array/object. The first FLATTEN on `data:departments` produces one row per department. To get individual employees, chain a second FLATTEN: `FLATTEN(value:employees)`. Each FLATTEN expands exactly one array level.
+**Exam Trap:** FLATTEN is NOT recursive — nested arrays always require multiple FLATTEN operations chained together.
+---
+
+### Question 6
+A developer clones a production table: `CREATE TABLE dev_copy CLONE prod_table`. They then INSERT 1 million rows into dev_copy and DELETE 500K rows from prod_table. Which statement about storage is TRUE?
+- A) dev_copy and prod_table share all original micro-partitions; new storage is consumed only for the 1M inserted rows in dev_copy and new partitions from the DELETE in prod_table
+- B) The clone immediately doubles storage
+- C) Only dev_copy consumes new storage; prod_table DELETE doesn't affect shared partitions
+- D) Storage is shared until the first query against either table
+
+**Answer: A) dev_copy and prod_table share all original micro-partitions; new storage is consumed only for the 1M inserted rows in dev_copy and new partitions from the DELETE in prod_table**
+**Explanation:** Zero-copy cloning shares micro-partitions at creation. New storage is consumed only when DML creates new partitions in EITHER table. The INSERT into dev_copy creates new partitions (billed to dev_copy). The DELETE from prod_table creates new versions (billed to prod_table). Unchanged partitions remain shared.
+**Exam Trap:** DML on EITHER the source OR clone triggers storage divergence — not just the clone.
+---
+
+### Question 7
+A task DAG has: Root → (Task_A, Task_B) → Task_C (depends on both A and B). Task_A completes in 2 minutes. Task_B fails after 5 minutes. What happens to Task_C?
+- A) Task_C runs after Task_A completes (doesn't wait for Task_B)
+- B) Task_C is skipped for this execution because one of its predecessors failed
+- C) Task_C waits for Task_B to retry and complete
+- D) The entire DAG is suspended permanently
+
+**Answer: B) Task_C is skipped for this execution because one of its predecessors failed**
+**Explanation:** In a task DAG, a child task only executes if ALL its predecessors succeed. If any predecessor fails, the child is skipped for that run. The DAG is not permanently suspended — it will retry the full tree on the next scheduled execution.
+**Exam Trap:** "ALL predecessors must succeed" — even if Task_A succeeded, Task_C still requires Task_B to also succeed.
+---
+
+### Question 8
+A data architect needs a staging table that: (1) holds data temporarily during ETL, (2) minimizes storage costs, (3) doesn't need Fail-safe protection, and (4) requires 3 days of Time Travel. Which table type should they use?
+- A) Transient table with DATA_RETENTION_TIME_IN_DAYS = 3
+- B) Temporary table with DATA_RETENTION_TIME_IN_DAYS = 3
+- C) Permanent table with DATA_RETENTION_TIME_IN_DAYS = 3
+- D) Transient table — but it only supports 0 or 1 day of Time Travel
+
+**Answer: D) Transient table — but it only supports 0 or 1 day of Time Travel**
+**Explanation:** Transient tables have no Fail-safe (reducing storage cost) but only support 0 or 1 day of Time Travel (not 3 days). The requirement for 3 days of Time Travel cannot be met with a transient table. The architect must choose: permanent table (3 days TT + 7 days Fail-safe) or accept only 1 day TT with transient.
+**Exam Trap:** Transient and temporary tables max out at 1 day Time Travel — only permanent tables support up to 90 days.
+---
+
+### Question 9
+A Query Profile shows a TableScan operator with "Partitions Scanned: 50,000" and "Partitions Total: 50,000" (100% scan). The table has a clustering key on `region`. The query filters on `WHERE region = 'US-EAST' AND order_date > '2024-01-01'`. What explains the full scan?
+- A) The clustering key is not effective because `region` has low cardinality — most partitions contain 'US-EAST' rows
+- B) The `order_date` filter is overriding the clustering benefit
+- C) Clustering keys don't help with equality filters
+- D) The query cache is disabled, forcing a full scan
+
+**Answer: A) The clustering key is not effective because `region` has low cardinality — most partitions contain 'US-EAST' rows**
+**Explanation:** If `region` has few distinct values (e.g., 5 regions), each region's data is spread across many partitions, or many partitions contain mixed regions. With low cardinality, even a perfectly clustered table may have most partitions containing at least one 'US-EAST' row. A compound clustering key on (region, order_date) would improve pruning.
+**Exam Trap:** Low-cardinality columns alone make poor clustering keys — combine with a high-cardinality column for effective pruning.
+---
+
+### Question 10
+An analyst runs: `SELECT * FROM orders AT(OFFSET => -3600)`. The table had DATA_RETENTION_TIME_IN_DAYS reduced from 7 to 0 yesterday. Today is within the original 7-day window. Can the query succeed?
+- A) Yes — existing historical data is retained until the original retention period expires
+- B) No — setting retention to 0 immediately purges all historical data
+- C) Yes, but only for the next 24 hours
+- D) It depends on whether the data has been modified since the retention change
+
+**Answer: B) No — setting retention to 0 immediately purges all historical data**
+**Explanation:** When DATA_RETENTION_TIME_IN_DAYS is reduced (e.g., from 7 to 0), historical data beyond the new retention period is eligible for immediate purging. Snowflake may purge it at any time after the change. The query will likely fail with an insufficient retention error.
+**Exam Trap:** Reducing retention is destructive — historical data can be purged immediately upon the change, not after the old period expires.
+---
+
+### Question 11
+A stream captures changes to a table used in a MERGE. The MERGE reads the stream and inserts into a target. If the MERGE transaction fails and rolls back, what happens to the stream offset?
+- A) The offset advances anyway — stream consumption is independent of transaction success
+- B) The offset does NOT advance — it only advances on successful COMMIT
+- C) The offset partially advances for rows that were processed before failure
+- D) The stream becomes stale after a rollback
+
+**Answer: B) The offset does NOT advance — it only advances on successful COMMIT**
+**Explanation:** Stream offset advancement is transactional. If the consuming DML transaction fails or is rolled back, the stream offset remains at its previous position. The same changes will be available for the next consumption attempt. This ensures exactly-once processing semantics.
+**Exam Trap:** Stream offsets are atomic with the transaction — no partial advancement, no advancement on failure.
+---
+
+### Question 12
+A developer creates a clone of a table that has an active stream: `CREATE TABLE cloned CLONE source_table`. What happens to the stream?
+- A) The stream is also cloned and tracks changes to the cloned table
+- B) The stream remains on the source table only — it is NOT cloned
+- C) The clone fails because tables with streams cannot be cloned
+- D) A new stream is automatically created on the cloned table
+
+**Answer: B) The stream remains on the source table only — it is NOT cloned**
+**Explanation:** Streams are not included in clone operations. The original stream continues tracking the source table. The cloned table has no stream. If you need change tracking on the clone, create a new stream explicitly on the cloned table.
+**Exam Trap:** Cloning copies data/structure but NOT streams, tasks, or pipes associated with the table.
+---
+
+### Question 13
+A FLATTEN query uses `OUTER => TRUE` on a column that contains: row 1 = [1,2,3], row 2 = NULL, row 3 = []. How many total output rows are produced?
+- A) 3 rows (from row 1 only — NULL and empty arrays produce nothing)
+- B) 5 rows (3 from row 1, 1 from row 2 with NULLs, 1 from row 3 with NULLs)
+- C) 4 rows (3 from row 1, 1 from row 2 with NULLs; empty array still produces nothing)
+- D) 3 rows (from row 1; OUTER only affects NULL, not empty arrays)
+
+**Answer: B) 5 rows (3 from row 1, 1 from row 2 with NULLs, 1 from row 3 with NULLs)**
+**Explanation:** OUTER => TRUE preserves the parent row when the input is NULL OR an empty array. Row 1 produces 3 rows (one per element). Row 2 (NULL) produces 1 row with NULL flatten columns. Row 3 (empty []) produces 1 row with NULL flatten columns. Total: 5.
+**Exam Trap:** OUTER => TRUE covers BOTH NULL inputs AND empty arrays — candidates often forget the empty array case.
+---
+
+### Question 14
+A zero-copy clone is created from a permanent table. The clone inherits which properties?
+- A) Data, structure, clustering keys, grants, and streams
+- B) Data, structure, clustering keys, and table-level grants, but NOT streams or tasks
+- C) Data and structure only — all other properties must be reconfigured
+- D) Data, structure, clustering keys, stage files, and load history
+
+**Answer: B) Data, structure, clustering keys, and table-level grants, but NOT streams or tasks**
+**Explanation:** Cloning copies the table data (zero-copy), structure (columns, constraints), clustering keys, and grants on the table itself. It does NOT clone streams, tasks, pipes, or external objects referencing the table. Load history metadata is also NOT cloned.
+**Exam Trap:** Grants ARE cloned (unlike streams/tasks) — this is frequently tested and often confused.
+---
+
+### Question 15
+A task DAG has 5 tasks: Root → A → B → C → D (linear chain). The root task schedule is every 10 minutes. Task A takes 3 min, B takes 4 min, C takes 2 min, D takes 5 min. Total execution exceeds 10 minutes. What happens when the next scheduled run triggers while the current run is still executing?
+- A) The new run queues and starts after the current run completes
+- B) The new run is skipped entirely
+- C) Both runs execute concurrently
+- D) The current run is cancelled and the new run starts
+
+**Answer: B) The new run is skipped entirely**
+**Explanation:** If a task DAG is still executing when the next scheduled trigger fires, that scheduled execution is skipped. Tasks do not queue or run concurrently within the same DAG. The skipped execution is logged. Adjust the schedule interval to exceed maximum DAG execution time.
+**Exam Trap:** Overlapping scheduled executions are SKIPPED, not queued — this can cause data processing gaps if the schedule is too aggressive.
+---
+
+### Question 16
+A query uses `SELECT * FROM events BEFORE(STATEMENT => '01xyz')` where '01xyz' is a DDL statement (ALTER TABLE ADD COLUMN). Is this valid?
+- A) Yes — BEFORE works with any statement ID including DDL
+- B) No — BEFORE(STATEMENT) only works with DML statement IDs
+- C) Yes, but it only returns data without the new column
+- D) No — Time Travel doesn't support DDL statement references
+
+**Answer: A) Yes — BEFORE works with any statement ID including DDL**
+**Explanation:** Time Travel's AT/BEFORE clauses work with any statement ID — DML or DDL. BEFORE(STATEMENT => DDL_id) returns the table state before the DDL was applied (e.g., before a column was added or dropped). This is useful for seeing the schema and data before structural changes.
+**Exam Trap:** Time Travel works with ALL statement types (DDL and DML) — not restricted to data-modifying statements only.
+---
+
+### Question 17
+An append-only stream is created on a staging table. The ETL process performs: INSERT 100 rows, then DELETE 30 rows (cleanup), then INSERT 50 more rows. What does the stream contain?
+- A) Net result: 120 rows (100 + 50 - 30) with INSERT actions
+- B) 150 rows with INSERT actions only (100 + 50); DELETEs are ignored by append-only streams
+- C) 100 rows from the first INSERT only
+- D) 180 rows: 150 INSERTs and 30 DELETEs
+
+**Answer: B) 150 rows with INSERT actions only (100 + 50); DELETEs are ignored by append-only streams**
+**Explanation:** Append-only streams capture ONLY INSERT operations. The DELETE of 30 rows is completely invisible to the stream. Both INSERT operations (100 + 50 = 150 rows) appear as INSERT actions in the stream.
+**Exam Trap:** Append-only streams see ALL inserts regardless of whether those rows are later deleted — they don't show "net" results.
+---
+
+### Question 18
+A table is created as TRANSIENT. A developer attempts to clone it. What type is the clone?
+- A) The clone is also TRANSIENT
+- B) The clone is PERMANENT by default
+- C) The clone fails — transient tables cannot be cloned
+- D) The clone type depends on the CREATE TABLE CLONE syntax used
+
+**Answer: A) The clone is also TRANSIENT**
+**Explanation:** When cloning a table, the clone inherits the table type (transient, temporary, permanent) of the source by default. A clone of a transient table is transient. You CAN override this by explicitly creating a permanent clone of a transient table, but the default matches the source.
+**Exam Trap:** The clone inherits the source table's type by default — a transient clone of a permanent table requires explicit TRANSIENT keyword.
+---
+
+### Question 19
+A query joins table A (10M rows) with table B (10M rows) using an equality condition. The Query Profile shows the join operator produces 500M rows. There is no Cartesian product — the join condition exists. What is the issue?
+- A) The join condition has a many-to-many relationship (fan-out/explosion)
+- B) The tables need to be re-clustered
+- C) A LEFT JOIN is preserving too many NULL rows
+- D) The query needs a DISTINCT clause
+
+**Answer: A) The join condition has a many-to-many relationship (fan-out/explosion)**
+**Explanation:** A join key with duplicates on BOTH sides creates a Cartesian product for each matching group. If key 'X' appears 100 times in A and 50 times in B, that single key produces 5,000 rows. This multiplied across all keys explains 500M output from 10M+10M input. Fix by deduplicating one side or adding join conditions.
+**Exam Trap:** Fan-out joins are not "Cartesian products" (they have a join condition) but produce similar row explosion — look for duplicate join keys on BOTH sides.
+---
+
+### Question 20
+A developer writes a stored procedure that creates a temporary table, inserts processed data, and then SELECTs from it in a subsequent statement. Another session queries the same temporary table name. What does the other session see?
+- A) The same data — temporary tables are session-scoped but visible to all sessions with the same role
+- B) Nothing — temporary tables are session-scoped and invisible to other sessions
+- C) An error — the table name conflicts
+- D) Their own empty temporary table with the same name
+
+**Answer: B) Nothing — temporary tables are session-scoped and invisible to other sessions**
+**Explanation:** Temporary tables exist only within the session that created them and are automatically dropped when the session ends. Other sessions cannot see or access them, even with the same role. If another session queries that table name, they'll get "object does not exist" (unless a permanent table with that name exists).
+**Exam Trap:** Temporary tables have session scope AND 0-1 day Time Travel AND no Fail-safe — they're truly ephemeral.
+
+---
+
+## Bonus: Advanced Scenario Questions
+
+### Question 56
+A data engineering team runs a MERGE statement that processes a staging table into a target. The MERGE fails with "Non-deterministic merge: multiple source rows matched the same target row." The staging table has 1M rows with customer_id as the join key. What must they do?
+
+- A) Add a WHERE clause to the MERGE to filter duplicates
+- B) Deduplicate the source BEFORE the MERGE (e.g., using QUALIFY ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY updated_at DESC) = 1)
+- C) Use INSERT ... ON CONFLICT instead of MERGE
+- D) Change the MERGE to use UPDATE only (no INSERT)
+
+**Answer: B) Deduplicate the source BEFORE the MERGE (e.g., using QUALIFY ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY updated_at DESC) = 1)**
+
+**Explanation:** MERGE requires that each target row matches at most ONE source row. Duplicate source keys matching the same target row creates non-determinism (which row "wins"?). The fix is to deduplicate the source first — ROW_NUMBER with QUALIFY is Snowflake's idiomatic approach. There is no ON CONFLICT syntax in Snowflake.
+
+**Exam Trap:** MERGE with duplicate source rows matching the same target = ERROR. Always deduplicate the source before MERGE.
+
+---
+
+### Question 57
+A stream on a table has STALE_AFTER = 2 days from now. The table has DATA_RETENTION_TIME_IN_DAYS = 3. If no one consumes the stream for 4 days, what happens?
+
+- A) The stream automatically resets to the current table state
+- B) The stream becomes STALE — unconsumed changes are permanently lost and the stream must be recreated
+- C) Snowflake extends the retention automatically to preserve stream data
+- D) The stream continues working with a warning
+
+**Answer: B) The stream becomes STALE — unconsumed changes are permanently lost and the stream must be recreated**
+
+**Explanation:** Stream staleness occurs when the stream's offset falls outside the table's Time Travel retention window. After 3 days of retention expire, the historical micro-partitions the stream needs are gone. The stream becomes stale and cannot be consumed — it must be recreated, and a full reload from another source is needed to catch up.
+
+**Exam Trap:** Stream staleness = Time Travel retention expired for the stream's offset point. Consumed = offset advances. Unconsumed too long = stale.
+
+---
+
+### Question 58
+A query joins TABLE_A (10B rows) with TABLE_B (100 rows) and the Query Profile shows 95% of execution time in a "Hash Join" operator with massive spilling. What optimization should be applied?
+
+- A) Swap the join order to put the small table first
+- B) No change needed — Snowflake's optimizer should automatically broadcast the small table (100 rows). Check if a filter on TABLE_B is missing or if TABLE_B is actually much larger than expected
+- C) Add a clustering key to TABLE_A
+- D) Increase the warehouse size
+
+**Answer: B) No change needed — Snowflake's optimizer should automatically broadcast the small table (100 rows). Check if a filter on TABLE_B is missing or if TABLE_B is actually much larger than expected**
+
+**Explanation:** With 100 rows, the optimizer should choose a broadcast join (no spilling). If massive spilling occurs, investigate whether TABLE_B is actually larger than expected (maybe the "100 rows" assumption is wrong), or if a missing filter is causing TABLE_B to expand. Snowflake's optimizer chooses join order regardless of SQL syntax.
+
+**Exam Trap:** Snowflake's optimizer picks join strategy automatically. If performance is poor, verify your assumptions about data sizes rather than forcing join order.
+
+---
+
+### Question 59
+A task is scheduled with `SCHEDULE = '5 MINUTE'`. The task's SQL takes 8 minutes to execute. What happens to the next scheduled run?
+
+- A) The next run starts immediately after the current one finishes (at minute 8), then the schedule resets
+- B) The next run is skipped entirely — the task runs sequentially, and the next execution begins at the next 5-minute boundary AFTER completion
+- C) Two instances run concurrently
+- D) The task is automatically suspended after timeout
+
+**Answer: B) The next run is skipped entirely — the task runs sequentially, and the next execution begins at the next 5-minute boundary AFTER completion**
+
+**Explanation:** Tasks do NOT run concurrently with themselves. If execution exceeds the schedule interval, the overlapping run is skipped. The task waits until the current execution completes, then the next run occurs at the next scheduled interval. This prevents resource contention and data race conditions.
+
+**Exam Trap:** Tasks are single-threaded (no concurrent self-runs). If execution > interval, scheduled runs are skipped until the current one finishes.
+
+---
+
+### Question 60
+A team uses a stream to track changes for incremental loading. They SELECT from the stream to preview changes but do NOT run any DML. The stream still shows the same records the next day. Why?
+
+- A) The stream is broken and needs recreation
+- B) SELECT does NOT advance the stream offset — only DML that CONSUMES the stream (INSERT INTO...SELECT FROM stream, MERGE, etc.) within a committed transaction advances it
+- C) The stream data persists for 24 hours before auto-clearing
+- D) A bug in stream behavior
+
+**Answer: B) SELECT does NOT advance the stream offset — only DML that CONSUMES the stream (INSERT INTO...SELECT FROM stream, MERGE, etc.) within a committed transaction advances it**
+
+**Explanation:** Stream offsets advance ONLY when stream data is consumed in a DML statement that commits. Simple SELECT queries are "read-only" against streams and never advance the offset. This design allows safe previewing without accidentally consuming change records.
+
+**Exam Trap:** SELECT from stream = preview (non-consuming). DML consuming stream + COMMIT = offset advances. Transaction rollback = offset unchanged.
+
+---
+
+### Question 61
+A table has 200,000 micro-partitions. The Query Profile shows "Partitions Scanned: 180,000" and "Partitions Total: 200,000" for a query filtering on `WHERE status = 'ACTIVE'`. The status column has 5 distinct values. Is adding a clustering key on `status` likely to help?
+
+- A) Yes — clustering on status will dramatically reduce partitions scanned
+- B) No — columns with very low cardinality (only 5 values) make poor clustering keys because partitions will still overlap significantly
+- C) Only if combined with another column
+- D) Clustering doesn't help with equality filters
+
+**Answer: A) Yes — clustering on status will dramatically reduce partitions scanned**
+
+**Explanation:** Low-cardinality columns can actually make EXCELLENT clustering keys because data can be perfectly segregated (all 'ACTIVE' rows in ~40,000 partitions, separate from 'INACTIVE' etc.). With only 5 values, clustering can achieve near-perfect pruning. High-cardinality columns (millions of unique values) are harder to cluster effectively.
+
+**Exam Trap:** Low cardinality columns CAN be good clustering keys — they allow clean separation. The key metric is whether the filter matches the clustering order.
+
+---
+
+### Question 62
+A secure view is used in a data sharing scenario. A consumer runs a query joining the shared secure view with their local table and applies a WHERE clause on a local column. The query is slow. What architectural limitation causes this?
+
+- A) Cross-account joins are always slow
+- B) Secure views disable query optimizer pushdown — the consumer's filter cannot be pushed into the secure view's underlying table scan, forcing more data to be processed before filtering
+- C) The consumer's warehouse is undersized
+- D) Network latency between provider and consumer storage
+
+**Answer: B) Secure views disable query optimizer pushdown — the consumer's filter cannot be pushed into the secure view's underlying table scan, forcing more data to be processed before filtering**
+
+**Explanation:** Secure views intentionally prevent predicate pushdown to avoid information leakage. The optimizer cannot push the consumer's WHERE clause through the secure view boundary. The secure view materializes its full result set first, THEN the consumer's filter is applied. This is a security-performance tradeoff by design.
+
+**Exam Trap:** Secure views disable optimizer pushdown = security over performance. Regular views allow full optimization but can leak information.
+
+---
+
+### Question 63
+A zero-copy clone of a 5TB table is created for testing. A developer runs `DELETE FROM clone_table WHERE region = 'EU'` which affects 30% of the data. Approximately how much ADDITIONAL storage does the clone now consume?
+
+- A) 5TB (full copy was made during DELETE)
+- B) ~1.5TB — only the micro-partitions affected by the DELETE are recreated (diverged storage)
+- C) Zero — deletes don't consume storage
+- D) 3.5TB — the remaining data is stored separately
+
+**Answer: B) ~1.5TB — only the micro-partitions affected by the DELETE are recreated (diverged storage)**
+
+**Explanation:** Zero-copy clones share micro-partitions with the source. When DML modifies data (DELETE recreates affected partitions), only the changed partitions diverge. The 30% of data deleted causes those specific micro-partitions to be recreated (new versions without EU rows). Unchanged partitions remain shared. So ~30% of 5TB ≈ 1.5TB additional storage.
+
+**Exam Trap:** Clone storage diverges only for MODIFIED partitions. Unmodified data remains shared (zero additional cost).
+
+---
+
+### Question 64
+A developer writes: `SELECT * FROM orders WHERE order_date BETWEEN '2025-01-01' AND '2025-12-31' AND YEAR(order_date) = 2025`. The table is clustered on order_date. The Query Profile shows 100% partition scan. What's the issue?
+
+- A) BETWEEN doesn't work with clustering
+- B) The YEAR() function wraps the clustering column, preventing pruning — the optimizer can't map YEAR(order_date) back to partition ranges
+- C) The AND condition conflicts with BETWEEN
+- D) String date comparisons bypass clustering
+
+**Answer: B) The YEAR() function wraps the clustering column, preventing pruning — the optimizer can't map YEAR(order_date) back to partition ranges**
+
+**Explanation:** While the BETWEEN clause CAN leverage pruning, the addition of YEAR(order_date) in an AND condition may cause the optimizer to choose a suboptimal plan. Actually in Snowflake, applying functions to a clustering column in WHERE can prevent pruning on that column. The BETWEEN alone would prune perfectly — the YEAR() function is redundant and may confuse the optimizer.
+
+**Exam Trap:** Avoid wrapping clustering key columns in functions (YEAR(), MONTH(), etc.) in WHERE clauses — use direct range predicates for effective pruning.
+
+---
+
+### Question 65
+A task DAG has: ROOT_TASK → TASK_A → TASK_C, and ROOT_TASK → TASK_B → TASK_C. TASK_A fails. What happens to TASK_C?
+
+- A) TASK_C runs because TASK_B succeeded (any predecessor success triggers it)
+- B) TASK_C is skipped because ALL predecessors must succeed for it to run
+- C) TASK_C runs with partial input (only from TASK_B)
+- D) It depends on the ALLOW_PARTIAL_DAG_EXECUTION setting
+
+**Answer: B) TASK_C is skipped because ALL predecessors must succeed for it to run**
+
+**Explanation:** In a Snowflake task DAG, a child task runs only when ALL of its predecessor tasks complete successfully. Since TASK_A failed and TASK_C depends on both TASK_A and TASK_B, TASK_C is skipped even though TASK_B succeeded. This ensures data consistency — TASK_C can rely on outputs from all parents.
+
+**Exam Trap:** Task DAG rule: ALL predecessors must succeed. One failure = child is skipped for that run cycle.
+
+---
+
+### Question 66
+A query references a table with 100,000 micro-partitions but the Query Profile shows "Partitions Scanned: 0" and returns results instantly. What happened?
+
+- A) The result was served from the result cache (a prior identical query ran within 24 hours)
+- B) The query was answered from metadata alone (e.g., SELECT COUNT(*))
+- C) Either A or B — both can result in 0 partitions scanned
+- D) The table is empty
+
+**Answer: C) Either A or B — both can result in 0 partitions scanned**
+
+**Explanation:** Zero partitions scanned occurs when: (1) the result cache serves a previously computed result, or (2) metadata-only queries like COUNT(*) without filters are answered from partition-level statistics. Both bypass actual data scanning. The Query Profile would show different indicators for each (result cache shows no execution plan at all).
+
+**Exam Trap:** 0 partitions scanned = result cache OR metadata optimization. Check whether a warehouse was used to distinguish them.
+
+---
+
+### Question 67
+A VARIANT column stores deeply nested JSON. A query with `data:level1:level2:level3:value::NUMBER` runs slowly despite the table being small (1000 rows). Why?
+
+- A) Nested path traversal is O(n³) complexity
+- B) Deep nesting prevents Snowflake's automatic columnarization — the path is stored in generic VARIANT format rather than columnar, requiring more I/O
+- C) Each colon-separated level requires a separate join internally
+- D) 1000 rows cannot cause slow queries
+
+**Answer: B) Deep nesting prevents Snowflake's automatic columnarization — the path is stored in generic VARIANT format rather than columnar, requiring more I/O**
+
+**Explanation:** Snowflake auto-columnarizes frequently accessed top-level paths in VARIANT data. Deeply nested paths may not be columnarized and require generic VARIANT traversal, which is slower. For performance-critical deeply nested access, consider flattening the data into explicit columns during loading.
+
+**Exam Trap:** Snowflake auto-columnarizes VARIANT but only reliably for commonly-accessed top-level paths. Deep nesting degrades performance.
+
+---
+
+### Question 68
+A table has DATA_RETENTION_TIME_IN_DAYS = 1 (Standard Edition). A user accidentally truncates the table at 10:00 AM. At 10:30 AM, they notice and want to recover. At 11:00 PM (13 hours later), another user also needs the data. Which user can recover?
+
+- A) Both users can recover — the 1-day retention hasn't expired
+- B) The 10:30 AM user can recover using Time Travel; the 11:00 PM user can also recover since it's within 24 hours
+- C) Both can recover using UNDROP — TRUNCATE doesn't remove Time Travel data within the retention window
+- D) Neither can recover — TRUNCATE bypasses Time Travel
+
+**Answer: C) Both can recover using UNDROP — TRUNCATE doesn't remove Time Travel data within the retention window**
+
+**Explanation:** TRUNCATE within the Time Travel retention period still retains history. Both users can recover using `INSERT INTO table SELECT * FROM table BEFORE(STATEMENT => '<truncate_query_id>')` or by cloning from a historical point. The 1-day retention means data is available for 24 hours after the truncate. Neither UNDROP nor TRUNCATE bypasses Time Travel.
+
+**Exam Trap:** TRUNCATE preserves Time Travel history (within retention). DATA_RETENTION = 0 is what kills recoverability, not TRUNCATE.
+
+---
+
+### Question 69
+A multi-cluster warehouse has MAX_CLUSTER_COUNT = 10 with Economy scaling policy. During a load test, only 2 clusters are active despite 50 queries queueing. What explains this behavior?
+
+- A) Economy policy is broken and should be replaced with Standard
+- B) Economy policy only starts new clusters when it estimates enough work exists to keep the cluster busy for ~6 minutes. Short-running queued queries may not meet this threshold
+- C) Economy policy has a maximum of 2 clusters
+- D) The warehouse is at its credit limit
+
+**Answer: B) Economy policy only starts new clusters when it estimates enough work exists to keep the cluster busy for ~6 minutes. Short-running queued queries may not meet this threshold**
+
+**Explanation:** Economy scaling policy is conservative — it won't start a new cluster unless it estimates at least 6 minutes of continuous work for that cluster. If the 50 queued queries would each complete in seconds, the system may determine that queueing is cheaper than spinning up more clusters. Standard policy would start clusters immediately when any queueing begins.
+
+**Exam Trap:** Standard scaling = starts clusters sooner (responsive but expensive). Economy = waits until 6+ min of queued work justifies a new cluster.
+
+---
+
+### Question 70
+A table's clustering key is (country, city). A query filters on `WHERE city = 'Paris'` without filtering on country. How effective is pruning?
+
+- A) Perfectly effective — city is in the clustering key
+- B) Partially effective — the first clustering column (country) determines primary partition organization, so filtering only on city (second column) is less effective but not useless
+- C) Completely ineffective — you must always filter on the first column
+- D) It depends on the warehouse size
+
+**Answer: B) Partially effective — the first clustering column (country) determines primary partition organization, so filtering only on city (second column) is less effective but not useless**
+
+**Explanation:** Multi-column clustering keys organize data by the first column primarily, then second column within each first-column partition. Filtering on only the second column provides some pruning (since 'Paris' exists in only a few countries' partitions) but significantly less than filtering on the first column. Think of it like a phone book sorted by last name then first name — searching only by first name requires scanning many sections.
+
+**Exam Trap:** Clustering key column ORDER matters. Filtering on the first column = most pruning. Filtering on later columns = reduced (but not zero) benefit.
+
+---
+
+### Question 71
+A developer creates an append-only stream on a staging table. The staging table undergoes INSERT, UPDATE, and DELETE operations. What does the append-only stream capture?
+
+- A) All three operation types (INSERT, UPDATE, DELETE)
+- B) Only INSERT operations — UPDATEs and DELETEs are invisible to append-only streams
+- C) INSERTs and UPDATEs but not DELETEs
+- D) The stream becomes stale because it cannot handle UPDATEs
+
+**Answer: B) Only INSERT operations — UPDATEs and DELETEs are invisible to append-only streams**
+
+**Explanation:** Append-only streams capture ONLY new row insertions. They ignore UPDATEs and DELETEs entirely. This makes them efficient for staging tables that are append-only (load-only) patterns. If the source table receives UPDATEs/DELETEs, a standard stream should be used instead.
+
+**Exam Trap:** Append-only stream = INSERT only. Standard stream = INSERT + UPDATE + DELETE. Choose based on source table patterns.
+
+---
+
+### Question 72
+A query uses `SELECT *, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) as rn FROM orders QUALIFY rn = 1`. What is QUALIFY and why is it preferred over a subquery approach?
+
+- A) QUALIFY is syntactic sugar for HAVING — no performance difference
+- B) QUALIFY filters on window function results directly (like HAVING for GROUP BY), avoiding a subquery/CTE wrapper and potentially improving performance
+- C) QUALIFY is required — you cannot filter on window functions any other way in Snowflake
+- D) QUALIFY is deprecated in favor of WHERE
+
+**Answer: B) QUALIFY filters on window function results directly (like HAVING for GROUP BY), avoiding a subquery/CTE wrapper and potentially improving performance**
+
+**Explanation:** QUALIFY is Snowflake's extension that filters results of window functions directly in the same query block. Without QUALIFY, you'd need a subquery: `SELECT * FROM (SELECT *, ROW_NUMBER()... as rn FROM orders) WHERE rn = 1`. QUALIFY is more readable and may allow the optimizer to combine operations. It's unique to Snowflake (and a few other systems).
+
+**Exam Trap:** QUALIFY = Snowflake's window function filter clause. It's unique and elegant — expect exam questions testing its purpose and syntax.
+
+---
+
+### Question 73
+A data pipeline uses a standard stream on a source table. The source table has DATA_RETENTION_TIME_IN_DAYS = 1. The pipeline task runs every 2 hours normally but was disabled for maintenance lasting 30 hours. When the task resumes, what is the stream's state?
+
+- A) The stream is healthy — it retained all changes during the 30-hour outage
+- B) The stream is STALE — 30 hours exceeds the 1-day Time Travel retention, so the stream's offset points to data no longer available
+- C) The stream has partial data (only the last 24 hours)
+- D) The stream automatically resets to current and discards missed changes
+
+**Answer: B) The stream is STALE — 30 hours exceeds the 1-day Time Travel retention, so the stream's offset points to data no longer available**
+
+**Explanation:** Stream validity depends on the source table's Time Travel retention. With 1-day retention, historical micro-partitions are purged after 24 hours. After 30 hours without consumption, the stream's offset references purged data — making it stale. To avoid this: increase DATA_RETENTION_TIME_IN_DAYS or ensure the task consumes the stream more frequently than the retention period.
+
+**Exam Trap:** Stream staleness = retention period < time between consumptions. Set retention > maximum expected processing gap.
+
+---
+
+### Question 74
+A table has Time Travel set to 90 days. A user drops the table. 60 days later, they UNDROP it. How much Time Travel history does the recovered table have?
+
+- A) 90 days from the original creation
+- B) 30 days (90 - 60 days elapsed)
+- C) 0 days — UNDROP resets the clock
+- D) The table is recovered as it was at drop time, with its remaining Time Travel history (about 30 days of pre-drop history available)
+
+**Answer: D) The table is recovered as it was at drop time, with its remaining Time Travel history (about 30 days of pre-drop history available)**
+
+**Explanation:** UNDROP restores the table to its state at drop time. Time Travel data that was retained at drop time (and hasn't aged out of the 90-day window) is still available. Since 60 days passed, changes from before the drop that are older than 90 days from NOW are gone, but the last ~30 days before the drop remain queryable.
+
+**Exam Trap:** UNDROP restores the table AND its Time Travel history — but only for changes still within the retention window from the current time.
+
+---
+
+### Question 75
+A COPY INTO with VALIDATION_MODE = 'RETURN_ERRORS' returns zero errors for a staged file. The team then removes VALIDATION_MODE and runs the same COPY INTO. It reports "Copy executed with 0 files processed." What happened?
+
+- A) VALIDATION_MODE consumed the file
+- B) VALIDATION_MODE does not load data but REGISTERS the file in the load metadata — the file appears "already processed"
+- C) The file was corrupted between validation and loading
+- D) COPY INTO requires different syntax after validation
+
+**Answer: B) VALIDATION_MODE does not load data but REGISTERS the file in the load metadata — the file appears "already processed"**
+
+**Explanation:** This is a critical gotcha: VALIDATION_MODE validates without loading, but the file IS registered in Snowflake's 64-day load metadata. Subsequent COPY INTO commands see it as already loaded and skip it. Fix: use FORCE = TRUE on the actual load, or rename the file.
+
+**Exam Trap:** VALIDATION_MODE = dry run but file IS marked as processed. Always use FORCE = TRUE for the subsequent real load.
+
+---
