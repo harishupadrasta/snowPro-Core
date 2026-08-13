@@ -1,3 +1,6 @@
+# Snowflake
+.snowflake/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -16,4 +19,5 @@ node_modules/
 # Temporary
 *.tmp
 *.bak
+
 .snowflake/
