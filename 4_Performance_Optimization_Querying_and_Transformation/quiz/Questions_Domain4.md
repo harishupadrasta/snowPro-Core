@@ -1,5 +1,7 @@
 # Domain 4: Performance Optimization, Querying, and Transformation — Practice Questions
 
+![Total Questions Badge](https://img.shields.io/badge/Total_Questions-95-blue)
+
 ## Section A: Query Profile & Performance (12 Questions)
 
 ### Question 1
@@ -908,7 +910,7 @@ D) Only tables with Time Travel enabled are restored
 
 ---
 
-## Bonus Questions (Mixed Topics)
+## Section E: Bonus Questions — Mixed Topics (5 Questions)
 
 ### Question 51
 Which function is used to generate a unique identifier suitable for surrogate keys without a sequence?
@@ -1000,9 +1002,9 @@ D) It supports more complex transformations
 
 ---
 
-## Bonus: Advanced Scenario Questions
+## Section F: Advanced Scenario Questions (40 Questions)
 
-### Question 1
+### Question 56
 A data engineer examines the Query Profile for a slow query and sees: "Bytes Spilled to Local Storage: 12GB" and "Bytes Spilled to Remote Storage: 45GB." The warehouse is MEDIUM. What is the BEST remediation?
 - A) Add a clustering key to the target table
 - B) Scale UP the warehouse to LARGE or XLARGE to increase memory
@@ -1020,7 +1022,7 @@ A data engineer examines the Query Profile for a slow query and sees: "Bytes Spi
 
 ---
 
-### Question 2
+### Question 57
 A stream on table `orders` has DATA_RETENTION_TIME_IN_DAYS = 1 on the source table. The stream hasn't been consumed in 36 hours. A task attempts to read from the stream. What happens?
 - A) The task reads empty results because the stream auto-clears after 24 hours
 - B) The stream is stale — the query fails with an error indicating the stream cannot access historical data
@@ -1038,7 +1040,7 @@ A stream on table `orders` has DATA_RETENTION_TIME_IN_DAYS = 1 on the source tab
 
 ---
 
-### Question 3
+### Question 58
 A MERGE statement targets `dim_customer` from staging table `stg_customer`. The staging table has two rows with customer_id = 'C001' — one from 9:00 AM and one from 9:05 AM. The MERGE matches on customer_id. What occurs?
 - A) The 9:05 AM record wins (last write wins)
 - B) The MERGE fails with a non-deterministic error
@@ -1056,7 +1058,7 @@ A MERGE statement targets `dim_customer` from staging table `stg_customer`. The 
 
 ---
 
-### Question 4
+### Question 59
 A developer wants to recover a table to its state just BEFORE an accidental UPDATE (query ID: '01abc123'). They write: `CREATE TABLE recovered AS SELECT * FROM my_table AT(STATEMENT => '01abc123')`. Is this correct?
 - A) Yes — AT includes the state after the statement, which is what they want
 - B) No — they should use BEFORE(STATEMENT => '01abc123') to get the state before the UPDATE
@@ -1074,7 +1076,7 @@ A developer wants to recover a table to its state just BEFORE an accidental UPDA
 
 ---
 
-### Question 5
+### Question 60
 A table contains JSON arrays nested two levels deep: `{"departments": [{"name": "Sales", "employees": [{"id": 1}, {"id": 2}]}]}`. A query uses a single FLATTEN on `data:departments`. How many rows does it produce per source row, and can employee IDs be accessed?
 - A) One row per department; employee IDs require a second FLATTEN on value:employees
 - B) One row per employee; single FLATTEN auto-expands nested arrays
@@ -1092,7 +1094,7 @@ A table contains JSON arrays nested two levels deep: `{"departments": [{"name": 
 
 ---
 
-### Question 6
+### Question 61
 A developer clones a production table: `CREATE TABLE dev_copy CLONE prod_table`. They then INSERT 1 million rows into dev_copy and DELETE 500K rows from prod_table. Which statement about storage is TRUE?
 - A) dev_copy and prod_table share all original micro-partitions; new storage is consumed only for the 1M inserted rows in dev_copy and new partitions from the DELETE in prod_table
 - B) The clone immediately doubles storage
@@ -1110,7 +1112,7 @@ A developer clones a production table: `CREATE TABLE dev_copy CLONE prod_table`.
 
 ---
 
-### Question 7
+### Question 62
 A task DAG has: Root → (Task_A, Task_B) → Task_C (depends on both A and B). Task_A completes in 2 minutes. Task_B fails after 5 minutes. What happens to Task_C?
 - A) Task_C runs after Task_A completes (doesn't wait for Task_B)
 - B) Task_C is skipped for this execution because one of its predecessors failed
@@ -1128,7 +1130,7 @@ A task DAG has: Root → (Task_A, Task_B) → Task_C (depends on both A and B). 
 
 ---
 
-### Question 8
+### Question 63
 A data architect needs a staging table that: (1) holds data temporarily during ETL, (2) minimizes storage costs, (3) doesn't need Fail-safe protection, and (4) requires 3 days of Time Travel. Which table type should they use?
 - A) Transient table with DATA_RETENTION_TIME_IN_DAYS = 3
 - B) Temporary table with DATA_RETENTION_TIME_IN_DAYS = 3
@@ -1146,7 +1148,7 @@ A data architect needs a staging table that: (1) holds data temporarily during E
 
 ---
 
-### Question 9
+### Question 64
 A Query Profile shows a TableScan operator with "Partitions Scanned: 50,000" and "Partitions Total: 50,000" (100% scan). The table has a clustering key on `region`. The query filters on `WHERE region = 'US-EAST' AND order_date > '2024-01-01'`. What explains the full scan?
 - A) The clustering key is not effective because `region` has low cardinality — most partitions contain 'US-EAST' rows
 - B) The `order_date` filter is overriding the clustering benefit
@@ -1164,7 +1166,7 @@ A Query Profile shows a TableScan operator with "Partitions Scanned: 50,000" and
 
 ---
 
-### Question 10
+### Question 65
 An analyst runs: `SELECT * FROM orders AT(OFFSET => -3600)`. The table had DATA_RETENTION_TIME_IN_DAYS reduced from 7 to 0 yesterday. Today is within the original 7-day window. Can the query succeed?
 - A) Yes — existing historical data is retained until the original retention period expires
 - B) No — setting retention to 0 immediately purges all historical data
@@ -1182,7 +1184,7 @@ An analyst runs: `SELECT * FROM orders AT(OFFSET => -3600)`. The table had DATA_
 
 ---
 
-### Question 11
+### Question 66
 A stream captures changes to a table used in a MERGE. The MERGE reads the stream and inserts into a target. If the MERGE transaction fails and rolls back, what happens to the stream offset?
 - A) The offset advances anyway — stream consumption is independent of transaction success
 - B) The offset does NOT advance — it only advances on successful COMMIT
@@ -1200,7 +1202,7 @@ A stream captures changes to a table used in a MERGE. The MERGE reads the stream
 
 ---
 
-### Question 12
+### Question 67
 A developer creates a clone of a table that has an active stream: `CREATE TABLE cloned CLONE source_table`. What happens to the stream?
 - A) The stream is also cloned and tracks changes to the cloned table
 - B) The stream remains on the source table only — it is NOT cloned
@@ -1218,7 +1220,7 @@ A developer creates a clone of a table that has an active stream: `CREATE TABLE 
 
 ---
 
-### Question 13
+### Question 68
 A FLATTEN query uses `OUTER => TRUE` on a column that contains: row 1 = [1,2,3], row 2 = NULL, row 3 = []. How many total output rows are produced?
 - A) 3 rows (from row 1 only — NULL and empty arrays produce nothing)
 - B) 5 rows (3 from row 1, 1 from row 2 with NULLs, 1 from row 3 with NULLs)
@@ -1236,7 +1238,7 @@ A FLATTEN query uses `OUTER => TRUE` on a column that contains: row 1 = [1,2,3],
 
 ---
 
-### Question 14
+### Question 69
 A zero-copy clone is created from a permanent table. The clone inherits which properties?
 - A) Data, structure, clustering keys, grants, and streams
 - B) Data, structure, clustering keys, and table-level grants, but NOT streams or tasks
@@ -1254,7 +1256,7 @@ A zero-copy clone is created from a permanent table. The clone inherits which pr
 
 ---
 
-### Question 15
+### Question 70
 A task DAG has 5 tasks: Root → A → B → C → D (linear chain). The root task schedule is every 10 minutes. Task A takes 3 min, B takes 4 min, C takes 2 min, D takes 5 min. Total execution exceeds 10 minutes. What happens when the next scheduled run triggers while the current run is still executing?
 - A) The new run queues and starts after the current run completes
 - B) The new run is skipped entirely
@@ -1272,7 +1274,7 @@ A task DAG has 5 tasks: Root → A → B → C → D (linear chain). The root ta
 
 ---
 
-### Question 16
+### Question 71
 A query uses `SELECT * FROM events BEFORE(STATEMENT => '01xyz')` where '01xyz' is a DDL statement (ALTER TABLE ADD COLUMN). Is this valid?
 - A) Yes — BEFORE works with any statement ID including DDL
 - B) No — BEFORE(STATEMENT) only works with DML statement IDs
@@ -1290,7 +1292,7 @@ A query uses `SELECT * FROM events BEFORE(STATEMENT => '01xyz')` where '01xyz' i
 
 ---
 
-### Question 17
+### Question 72
 An append-only stream is created on a staging table. The ETL process performs: INSERT 100 rows, then DELETE 30 rows (cleanup), then INSERT 50 more rows. What does the stream contain?
 - A) Net result: 120 rows (100 + 50 - 30) with INSERT actions
 - B) 150 rows with INSERT actions only (100 + 50); DELETEs are ignored by append-only streams
@@ -1308,7 +1310,7 @@ An append-only stream is created on a staging table. The ETL process performs: I
 
 ---
 
-### Question 18
+### Question 73
 A table is created as TRANSIENT. A developer attempts to clone it. What type is the clone?
 - A) The clone is also TRANSIENT
 - B) The clone is PERMANENT by default
@@ -1326,7 +1328,7 @@ A table is created as TRANSIENT. A developer attempts to clone it. What type is 
 
 ---
 
-### Question 19
+### Question 74
 A query joins table A (10M rows) with table B (10M rows) using an equality condition. The Query Profile shows the join operator produces 500M rows. There is no Cartesian product — the join condition exists. What is the issue?
 - A) The join condition has a many-to-many relationship (fan-out/explosion)
 - B) The tables need to be re-clustered
@@ -1344,7 +1346,7 @@ A query joins table A (10M rows) with table B (10M rows) using an equality condi
 
 ---
 
-### Question 20
+### Question 75
 A developer writes a stored procedure that creates a temporary table, inserts processed data, and then SELECTs from it in a subsequent statement. Another session queries the same temporary table name. What does the other session see?
 - A) The same data — temporary tables are session-scoped but visible to all sessions with the same role
 - B) Nothing — temporary tables are session-scoped and invisible to other sessions
@@ -1362,9 +1364,7 @@ A developer writes a stored procedure that creates a temporary table, inserts pr
 
 ---
 
-## Bonus: Advanced Scenario Questions
-
-### Question 56
+### Question 76
 A data engineering team runs a MERGE statement that processes a staging table into a target. The MERGE fails with "Non-deterministic merge: multiple source rows matched the same target row." The staging table has 1M rows with customer_id as the join key. What must they do?
 
 - A) Add a WHERE clause to the MERGE to filter duplicates
@@ -1385,7 +1385,7 @@ A data engineering team runs a MERGE statement that processes a staging table in
 
 ---
 
-### Question 57
+### Question 77
 A stream on a table has STALE_AFTER = 2 days from now. The table has DATA_RETENTION_TIME_IN_DAYS = 3. If no one consumes the stream for 4 days, what happens?
 
 - A) The stream automatically resets to the current table state
@@ -1406,7 +1406,7 @@ A stream on a table has STALE_AFTER = 2 days from now. The table has DATA_RETENT
 
 ---
 
-### Question 58
+### Question 78
 A query joins TABLE_A (10B rows) with TABLE_B (100 rows) and the Query Profile shows 95% of execution time in a "Hash Join" operator with massive spilling. What optimization should be applied?
 
 - A) Swap the join order to put the small table first
@@ -1427,7 +1427,7 @@ A query joins TABLE_A (10B rows) with TABLE_B (100 rows) and the Query Profile s
 
 ---
 
-### Question 59
+### Question 79
 A task is scheduled with `SCHEDULE = '5 MINUTE'`. The task's SQL takes 8 minutes to execute. What happens to the next scheduled run?
 
 - A) The next run starts immediately after the current one finishes (at minute 8), then the schedule resets
@@ -1448,7 +1448,7 @@ A task is scheduled with `SCHEDULE = '5 MINUTE'`. The task's SQL takes 8 minutes
 
 ---
 
-### Question 60
+### Question 80
 A team uses a stream to track changes for incremental loading. They SELECT from the stream to preview changes but do NOT run any DML. The stream still shows the same records the next day. Why?
 
 - A) The stream is broken and needs recreation
@@ -1469,7 +1469,7 @@ A team uses a stream to track changes for incremental loading. They SELECT from 
 
 ---
 
-### Question 61
+### Question 81
 A table has 200,000 micro-partitions. The Query Profile shows "Partitions Scanned: 180,000" and "Partitions Total: 200,000" for a query filtering on `WHERE status = 'ACTIVE'`. The status column has 5 distinct values. Is adding a clustering key on `status` likely to help?
 
 - A) Yes — clustering on status will dramatically reduce partitions scanned
@@ -1490,7 +1490,7 @@ A table has 200,000 micro-partitions. The Query Profile shows "Partitions Scanne
 
 ---
 
-### Question 62
+### Question 82
 A secure view is used in a data sharing scenario. A consumer runs a query joining the shared secure view with their local table and applies a WHERE clause on a local column. The query is slow. What architectural limitation causes this?
 
 - A) Cross-account joins are always slow
@@ -1511,7 +1511,7 @@ A secure view is used in a data sharing scenario. A consumer runs a query joinin
 
 ---
 
-### Question 63
+### Question 83
 A zero-copy clone of a 5TB table is created for testing. A developer runs `DELETE FROM clone_table WHERE region = 'EU'` which affects 30% of the data. Approximately how much ADDITIONAL storage does the clone now consume?
 
 - A) 5TB (full copy was made during DELETE)
@@ -1532,7 +1532,7 @@ A zero-copy clone of a 5TB table is created for testing. A developer runs `DELET
 
 ---
 
-### Question 64
+### Question 84
 A developer writes: `SELECT * FROM orders WHERE order_date BETWEEN '2025-01-01' AND '2025-12-31' AND YEAR(order_date) = 2025`. The table is clustered on order_date. The Query Profile shows 100% partition scan. What's the issue?
 
 - A) BETWEEN doesn't work with clustering
@@ -1553,7 +1553,7 @@ A developer writes: `SELECT * FROM orders WHERE order_date BETWEEN '2025-01-01' 
 
 ---
 
-### Question 65
+### Question 85
 A task DAG has: ROOT_TASK → TASK_A → TASK_C, and ROOT_TASK → TASK_B → TASK_C. TASK_A fails. What happens to TASK_C?
 
 - A) TASK_C runs because TASK_B succeeded (any predecessor success triggers it)
@@ -1574,7 +1574,7 @@ A task DAG has: ROOT_TASK → TASK_A → TASK_C, and ROOT_TASK → TASK_B → TA
 
 ---
 
-### Question 66
+### Question 86
 A query references a table with 100,000 micro-partitions but the Query Profile shows "Partitions Scanned: 0" and returns results instantly. What happened?
 
 - A) The result was served from the result cache (a prior identical query ran within 24 hours)
@@ -1595,7 +1595,7 @@ A query references a table with 100,000 micro-partitions but the Query Profile s
 
 ---
 
-### Question 67
+### Question 87
 A VARIANT column stores deeply nested JSON. A query with `data:level1:level2:level3:value::NUMBER` runs slowly despite the table being small (1000 rows). Why?
 
 - A) Nested path traversal is O(n³) complexity
@@ -1616,7 +1616,7 @@ A VARIANT column stores deeply nested JSON. A query with `data:level1:level2:lev
 
 ---
 
-### Question 68
+### Question 88
 A table has DATA_RETENTION_TIME_IN_DAYS = 1 (Standard Edition). A user accidentally truncates the table at 10:00 AM. At 10:30 AM, they notice and want to recover. At 11:00 PM (13 hours later), another user also needs the data. Which user can recover?
 
 - A) Both users can recover — the 1-day retention hasn't expired
@@ -1637,7 +1637,7 @@ A table has DATA_RETENTION_TIME_IN_DAYS = 1 (Standard Edition). A user accidenta
 
 ---
 
-### Question 69
+### Question 89
 A multi-cluster warehouse has MAX_CLUSTER_COUNT = 10 with Economy scaling policy. During a load test, only 2 clusters are active despite 50 queries queueing. What explains this behavior?
 
 - A) Economy policy is broken and should be replaced with Standard
@@ -1658,7 +1658,7 @@ A multi-cluster warehouse has MAX_CLUSTER_COUNT = 10 with Economy scaling policy
 
 ---
 
-### Question 70
+### Question 90
 A table's clustering key is (country, city). A query filters on `WHERE city = 'Paris'` without filtering on country. How effective is pruning?
 
 - A) Perfectly effective — city is in the clustering key
@@ -1679,7 +1679,7 @@ A table's clustering key is (country, city). A query filters on `WHERE city = 'P
 
 ---
 
-### Question 71
+### Question 91
 A developer creates an append-only stream on a staging table. The staging table undergoes INSERT, UPDATE, and DELETE operations. What does the append-only stream capture?
 
 - A) All three operation types (INSERT, UPDATE, DELETE)
@@ -1700,7 +1700,7 @@ A developer creates an append-only stream on a staging table. The staging table 
 
 ---
 
-### Question 72
+### Question 92
 A query uses `SELECT *, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date DESC) as rn FROM orders QUALIFY rn = 1`. What is QUALIFY and why is it preferred over a subquery approach?
 
 - A) QUALIFY is syntactic sugar for HAVING — no performance difference
@@ -1721,7 +1721,7 @@ A query uses `SELECT *, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY ord
 
 ---
 
-### Question 73
+### Question 93
 A data pipeline uses a standard stream on a source table. The source table has DATA_RETENTION_TIME_IN_DAYS = 1. The pipeline task runs every 2 hours normally but was disabled for maintenance lasting 30 hours. When the task resumes, what is the stream's state?
 
 - A) The stream is healthy — it retained all changes during the 30-hour outage
@@ -1742,7 +1742,7 @@ A data pipeline uses a standard stream on a source table. The source table has D
 
 ---
 
-### Question 74
+### Question 94
 A table has Time Travel set to 90 days. A user drops the table. 60 days later, they UNDROP it. How much Time Travel history does the recovered table have?
 
 - A) 90 days from the original creation
@@ -1763,7 +1763,7 @@ A table has Time Travel set to 90 days. A user drops the table. 60 days later, t
 
 ---
 
-### Question 75
+### Question 95
 A COPY INTO with VALIDATION_MODE = 'RETURN_ERRORS' returns zero errors for a staged file. The team then removes VALIDATION_MODE and runs the same COPY INTO. It reports "Copy executed with 0 files processed." What happened?
 
 - A) VALIDATION_MODE consumed the file

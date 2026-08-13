@@ -1,5 +1,7 @@
 # Domain 5: Data Collaboration — Practice Questions
 
+![Total Questions Badge](https://img.shields.io/badge/Total_Questions-90-blue)
+
 ## Section A: Secure Data Sharing (15 Questions)
 
 ### Question 1
@@ -490,7 +492,8 @@ D) A metadata-only preview with no actual query capability
 
 ---
 
-## Section C: Replication & Cross-Region (13 Questions)
+## Section C: Replication & Cross-Region (18 Questions)
+
 
 ### Question 28
 What is the key difference between a Replication Group and a Failover Group?
@@ -816,7 +819,7 @@ D) Use Snowpipe to stream only the subset to the consumer's region
 
 ---
 
-## Bonus Questions — Mixed Topics
+## Section D: Mixed & Advanced Scenario Questions (45 Questions)
 
 ### Question 46
 Which of the following is NOT possible with Snowflake Secure Data Sharing?
@@ -908,9 +911,7 @@ D) All shares in the Snowflake deployment
 
 ---
 
-## Bonus: Advanced Scenario Questions
-
-### Question 1
+### Question 51
 A provider creates a share containing a standard (non-secure) view that filters sensitive salary data. They attempt to add consumer account 'ACME_CORP' to the share. What happens?
 - A) The share is created successfully but the consumer sees unfiltered data
 - B) The ALTER SHARE ADD ACCOUNTS command fails with an error — only secure views can be shared
@@ -928,7 +929,7 @@ A provider creates a share containing a standard (non-secure) view that filters 
 
 ---
 
-### Question 2
+### Question 52
 A provider creates a reader account for a partner company. The partner's analysts run complex queries consuming significant warehouse credits. Who receives the bill for this compute?
 - A) The partner company (reader account holder)
 - B) The provider who created the reader account
@@ -946,7 +947,7 @@ A provider creates a reader account for a partner company. The partner's analyst
 
 ---
 
-### Question 3
+### Question 53
 A US-based provider on AWS US-East-1 wants to share data with a consumer on Azure West Europe. They attempt a direct share (CREATE SHARE, ADD ACCOUNTS). What happens?
 - A) The share works seamlessly — Snowflake handles cross-cloud sharing transparently
 - B) The share fails — direct sharing only works within the same cloud region; they need database replication or a Marketplace listing with auto-fulfillment
@@ -964,7 +965,7 @@ A US-based provider on AWS US-East-1 wants to share data with a consumer on Azur
 
 ---
 
-### Question 4
+### Question 54
 A healthcare company wants to monetize de-identified patient analytics data. They want any Snowflake customer to discover and access it with uniform pricing. Which Marketplace listing type is appropriate?
 - A) Free Listing
 - B) Standard Paid Listing (publicly discoverable, uniform pricing)
@@ -982,7 +983,7 @@ A healthcare company wants to monetize de-identified patient analytics data. The
 
 ---
 
-### Question 5
+### Question 55
 A company on Enterprise Edition wants to configure a Failover Group to replicate their database to a DR account in another region. They attempt `CREATE FAILOVER GROUP`. What happens?
 - A) The command succeeds — Failover Groups are available on Enterprise Edition
 - B) The command fails — Failover Groups require Business Critical Edition or higher on BOTH source and target accounts
@@ -1000,7 +1001,7 @@ A company on Enterprise Edition wants to configure a Failover Group to replicate
 
 ---
 
-### Question 6
+### Question 56
 A secondary (replicated) database exists in a DR account. A developer in the DR account attempts: `INSERT INTO replicated_db.schema.table VALUES (1, 'test')`. What happens?
 - A) The INSERT succeeds and the data is replicated back to the primary
 - B) The INSERT fails — replicated databases are read-only until promoted to primary
@@ -1018,7 +1019,7 @@ A secondary (replicated) database exists in a DR account. A developer in the DR 
 
 ---
 
-### Question 7
+### Question 57
 An industry consortium of 15 pharmaceutical companies wants to share clinical trial metadata among themselves but NOT with the general public. No single company should control the data exchange, and membership should be governed collectively. What is the best solution?
 - A) One company creates 14 direct shares (one to each partner)
 - B) A Private Data Exchange with a neutral administrator and all 15 companies as members
@@ -1036,7 +1037,7 @@ An industry consortium of 15 pharmaceutical companies wants to share clinical tr
 
 ---
 
-### Question 8
+### Question 58
 A provider runs: `GRANT SELECT ON TABLE sensitive_data TO SHARE my_share`. They have NOT created a secure view. The consumer creates a database from the share and queries the table. Can the consumer see the raw data?
 - A) Yes — tables can be shared directly without secure views, exposing all rows and columns
 - B) No — tables shared directly are automatically wrapped in a secure view
@@ -1054,7 +1055,7 @@ A provider runs: `GRANT SELECT ON TABLE sensitive_data TO SHARE my_share`. They 
 
 ---
 
-### Question 9
+### Question 59
 A provider has a secure view that uses `CURRENT_ACCOUNT()` for row filtering. The view references a mapping table that maps consumer account identifiers to allowed data. A new consumer is added to the share. What must the provider do to enable data access for the new consumer?
 - A) Nothing — the view automatically filters based on the new consumer's account
 - B) INSERT the new consumer's account identifier and allowed data mappings into the mapping table
@@ -1072,7 +1073,7 @@ A provider has a secure view that uses `CURRENT_ACCOUNT()` for row filtering. Th
 
 ---
 
-### Question 10
+### Question 60
 A share contains objects from database `ANALYTICS_DB`. The provider wants to add a table from `MARKETING_DB` to the same share. Is this possible?
 - A) Yes — shares can span multiple databases
 - B) No — a share can only contain objects from a SINGLE database
@@ -1090,7 +1091,7 @@ A share contains objects from database `ANALYTICS_DB`. The provider wants to add
 
 ---
 
-### Question 11
+### Question 61
 A company uses a Marketplace listing with auto-fulfillment. Their data is 500GB and they enable fulfillment to 8 regions. Approximately how much additional storage cost do they incur?
 - A) Zero — auto-fulfillment doesn't replicate data until a consumer requests it
 - B) Up to 8x their storage cost (500GB replicated to each region)
@@ -1108,7 +1109,7 @@ A company uses a Marketplace listing with auto-fulfillment. Their data is 500GB 
 
 ---
 
-### Question 12
+### Question 62
 A provider shares data with Consumer A. Consumer A creates a database from the share. Consumer A then wants to share a secure view (built on the shared data) with Consumer B. Can they?
 - A) Yes — Consumer A can reshare by creating their own share containing the view
 - B) No — databases created from shares are read-only and cannot have objects granted to new shares
@@ -1126,7 +1127,7 @@ A provider shares data with Consumer A. Consumer A creates a database from the s
 
 ---
 
-### Question 13
+### Question 63
 A provider's Snowflake account is in AWS US-East-1. They create a direct share with Consumer X (also AWS US-East-1) and Consumer Y (AWS US-West-2). What happens for each consumer?
 - A) Both consumers can access the share successfully
 - B) Consumer X can access the share; Consumer Y's ADD ACCOUNTS fails because it's cross-region
@@ -1144,7 +1145,7 @@ A provider's Snowflake account is in AWS US-East-1. They create a direct share w
 
 ---
 
-### Question 14
+### Question 64
 A provider grants SELECT on a table to a share, then later ALTERs the table to add a NOT NULL constraint on an existing column. Some existing rows have NULLs in that column. What does the consumer experience?
 - A) The consumer immediately sees the constraint error on their queries
 - B) The consumer sees the new constraint reflected but can still query all rows (constraints are informational in Snowflake)
@@ -1162,7 +1163,7 @@ A provider grants SELECT on a table to a share, then later ALTERs the table to a
 
 ---
 
-### Question 15
+### Question 65
 A global organization has 3 Snowflake accounts: Primary (AWS US-East), DR1 (Azure EU-West), DR2 (GCP Asia). They configure a Failover Group. A catastrophic failure occurs in AWS US-East. Who can promote DR1 to primary?
 - A) Any ACCOUNTADMIN in DR1 can run ALTER FAILOVER GROUP ... PRIMARY
 - B) Only the original primary account's ACCOUNTADMIN can authorize promotion
@@ -1180,7 +1181,7 @@ A global organization has 3 Snowflake accounts: Primary (AWS US-East), DR1 (Azur
 
 ---
 
-### Question 16
+### Question 66
 A provider publishes a paid listing on the Snowflake Marketplace. A consumer in the same region "gets" the listing. How is the data delivered to the consumer?
 - A) The data is physically copied to the consumer's account storage
 - B) A share is created behind the scenes — the consumer gets zero-copy access to the provider's data
@@ -1198,7 +1199,7 @@ A provider publishes a paid listing on the Snowflake Marketplace. A consumer in 
 
 ---
 
-### Question 17
+### Question 67
 A company creates a share and grants SELECT on table T1. Later they DROP table T1 and CREATE a new table with the same name T1. What does the consumer see?
 - A) The consumer automatically sees the new T1
 - B) The consumer still sees the old T1 data (share retains a reference to the dropped table)
@@ -1216,7 +1217,7 @@ A company creates a share and grants SELECT on table T1. Later they DROP table T
 
 ---
 
-### Question 18
+### Question 68
 A consumer queries a shared secure view and attempts `DESCRIBE VIEW shared_db.schema.secure_view` to understand its columns. What information do they receive?
 - A) Full view definition including SQL text, column names, and types
 - B) Column names and data types only — the SQL definition is hidden
@@ -1234,7 +1235,7 @@ A consumer queries a shared secure view and attempts `DESCRIBE VIEW shared_db.sc
 
 ---
 
-### Question 19
+### Question 69
 A provider in a regulated industry wants to share data only with pre-approved partners, negotiate individual pricing per partner, and require each partner to accept custom terms before accessing data. Which Marketplace approach fits?
 - A) Standard Paid Listing with terms of service
 - B) Personalized Listing — each consumer must "Request" and the provider approves with custom terms
@@ -1252,7 +1253,7 @@ A provider in a regulated industry wants to share data only with pre-approved pa
 
 ---
 
-### Question 20
+### Question 70
 A company configures a Failover Group that includes DATABASES and SHARES. After a failover event (secondary promoted to primary), what happens to the outbound shares that were being served from the original primary?
 - A) Consumers immediately connect to the new primary — shares transfer seamlessly
 - B) Shares stop working until the provider manually reconfigures them on the new primary
@@ -1270,9 +1271,7 @@ A company configures a Failover Group that includes DATABASES and SHARES. After 
 
 ---
 
-## Bonus: Advanced Scenario Questions
-
-### Question 51
+### Question 71
 A provider creates a reader account for a small partner company that doesn't have Snowflake. The partner's analysts run queries on shared data. At month-end, the provider is surprised by a $5,000 compute bill for the reader account. Who pays and why?
 
 - A) The partner pays because they consumed the compute
@@ -1293,7 +1292,7 @@ A provider creates a reader account for a small partner company that doesn't hav
 
 ---
 
-### Question 52
+### Question 72
 A provider shares a table using a secure view with `WHERE mapping.account_id = CURRENT_ACCOUNT()` for row-level filtering. Consumer A can see 1,000 rows. Consumer A then creates a reader account for their downstream partner. Can the partner's reader account see Consumer A's 1,000 rows?
 
 - A) Yes — the reader account inherits Consumer A's access
@@ -1314,7 +1313,7 @@ A provider shares a table using a secure view with `WHERE mapping.account_id = C
 
 ---
 
-### Question 53
+### Question 73
 A provider shares a database containing 100 tables. The consumer only needs 5 tables. The provider wants to minimize what's exposed. What is the recommended approach?
 
 - A) Share the full database and tell the consumer to only query 5 tables
@@ -1335,7 +1334,7 @@ A provider shares a database containing 100 tables. The consumer only needs 5 ta
 
 ---
 
-### Question 54
+### Question 74
 A consumer queries a shared table and notices the data is 2 hours stale compared to what the provider reported. The share is a direct share (same region, same cloud). What's the most likely explanation?
 
 - A) Replication lag between provider and consumer
@@ -1356,7 +1355,7 @@ A consumer queries a shared table and notices the data is 2 hours stale compared
 
 ---
 
-### Question 55
+### Question 75
 A provider creates a share and adds a table. They then ADD a consumer to the share. The consumer creates a database from the share. Later, the provider REMOVES the table from the share and adds a different table. What does the consumer see?
 
 - A) Both the old and new tables
@@ -1377,7 +1376,7 @@ A provider creates a share and adds a table. They then ADD a consumer to the sha
 
 ---
 
-### Question 56
+### Question 76
 A company wants to share data cross-region (provider in US-East-1, consumer in EU-West-1) using a direct share. Is this possible?
 
 - A) Yes — direct shares work cross-region natively
@@ -1398,7 +1397,7 @@ A company wants to share data cross-region (provider in US-East-1, consumer in E
 
 ---
 
-### Question 57
+### Question 77
 A failover group is configured between Account A (primary, US-East) and Account B (secondary, US-West). The group includes DATABASES and SHARES. Account A shares data with Consumer C. After failover to Account B, can Consumer C still access the shared data?
 
 - A) Yes — automatically, because SHARES are included in the failover group
@@ -1419,7 +1418,7 @@ A failover group is configured between Account A (primary, US-East) and Account 
 
 ---
 
-### Question 58
+### Question 78
 A provider publishes a free Marketplace listing. A consumer "Gets" the listing and creates a database. The provider then modifies data in their source table (adds 1M rows). When does the consumer see the new rows?
 
 - A) After the consumer refreshes their database
@@ -1440,7 +1439,7 @@ A provider publishes a free Marketplace listing. A consumer "Gets" the listing a
 
 ---
 
-### Question 59
+### Question 79
 A company has Snowflake accounts in 3 regions for their global operations. They want Account B (EU) to be a readable replica of Account A (US). Account C (APAC) should be a full failover target. What configuration is needed?
 
 - A) One replication group (A→B) and one failover group (A→C)
@@ -1461,7 +1460,7 @@ A company has Snowflake accounts in 3 regions for their global operations. They 
 
 ---
 
-### Question 60
+### Question 80
 Account A and Account B are in the same Snowflake organization but different cloud providers (A on AWS, B on Azure). Can A replicate to B?
 
 - A) No — replication only works within the same cloud provider
@@ -1482,7 +1481,7 @@ Account A and Account B are in the same Snowflake organization but different clo
 
 ---
 
-### Question 61
+### Question 81
 A consumer creates a database from a share and runs `ALTER DATABASE shared_db SET DATA_RETENTION_TIME_IN_DAYS = 30`. What happens?
 
 - A) Time Travel is enabled for the shared data with 30-day retention
@@ -1503,7 +1502,7 @@ A consumer creates a database from a share and runs `ALTER DATABASE shared_db SE
 
 ---
 
-### Question 62
+### Question 82
 A data provider wants to monitor how consumers are using their shared data — specifically query counts and which tables are most accessed. Where can they find this information?
 
 - A) ACCOUNT_USAGE.QUERY_HISTORY (filtering for consumer queries)
@@ -1524,7 +1523,7 @@ A data provider wants to monitor how consumers are using their shared data — s
 
 ---
 
-### Question 63
+### Question 83
 An organization wants to share a secure UDF that performs a proprietary calculation. The UDF references a lookup table. What must be true for the share to work?
 
 - A) Only the UDF needs to be in the share — it automatically accesses the lookup table
@@ -1545,7 +1544,7 @@ An organization wants to share a secure UDF that performs a proprietary calculat
 
 ---
 
-### Question 64
+### Question 84
 A Snowflake account participates as a consumer in 15 different data shares from various providers. An admin notices the account's storage costs are unusually high. Could the shared data be contributing to storage costs?
 
 - A) Yes — each shared database consumes storage proportional to the data size
@@ -1566,7 +1565,7 @@ A Snowflake account participates as a consumer in 15 different data shares from 
 
 ---
 
-### Question 65
+### Question 85
 A provider accidentally shares a table containing sensitive PII that should not have been exposed. They immediately revoke the consumer's access by removing them from the share. Is the data safe?
 
 - A) No — the consumer may have already copied the data locally
@@ -1587,7 +1586,7 @@ A provider accidentally shares a table containing sensitive PII that should not 
 
 ---
 
-### Question 66
+### Question 86
 Replication is configured between Account A (primary) and Account B (secondary) with a 10-minute refresh schedule. The latest successful refresh completed 5 minutes ago. Account A now fails catastrophically. What is the data loss?
 
 - A) Zero — replication is synchronous
@@ -1608,7 +1607,7 @@ Replication is configured between Account A (primary) and Account B (secondary) 
 
 ---
 
-### Question 67
+### Question 87
 A company creates a share and adds 3 tables from Database_A and 2 tables from Database_B. What happens?
 
 - A) The share is created with all 5 tables successfully
@@ -1629,7 +1628,7 @@ A company creates a share and adds 3 tables from Database_A and 2 tables from Da
 
 ---
 
-### Question 68
+### Question 88
 A provider shares data via a listing with auto-fulfillment enabled. The listing has consumers in 5 regions. The provider's source data is 10TB. Approximately how much total storage does the provider pay for?
 
 - A) 10TB — auto-fulfillment is free
@@ -1650,7 +1649,7 @@ A provider shares data via a listing with auto-fulfillment enabled. The listing 
 
 ---
 
-### Question 69
+### Question 89
 A company has database replication configured (Account A → Account B). They also share data from Account A to Consumer C. After a failover where Account B becomes primary, Consumer C cannot access the shared data. What's wrong?
 
 - A) Consumer C's database from share is permanently broken
@@ -1671,7 +1670,7 @@ A company has database replication configured (Account A → Account B). They al
 
 ---
 
-### Question 70
+### Question 90
 A Snowflake Native App is published on the Marketplace. A consumer installs it. Unlike a standard data share, what additional capability does the Native App provide?
 
 - A) Better compression of shared data

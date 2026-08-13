@@ -2,7 +2,7 @@
 
 <center>
 
-![Questions](https://img.shields.io/badge/Questions-63-blue)
+![Questions](https://img.shields.io/badge/Questions-103-blue)
 ![Domain Weight](https://img.shields.io/badge/Domain%20Weight-31%25-orange)
 ![Difficulty](https://img.shields.io/badge/Difficulty-Mixed-yellow)
 
@@ -1243,12 +1243,11 @@ What is the Time Travel retention for TRANSIENT tables, regardless of edition?
 | 1.4 Virtual Warehouses | Q31-Q40 | Sizing, scaling, billing, multi-cluster, policies |
 | 1.5 Caching | Q41-Q50 | Result cache, warehouse cache, metadata cache, invalidation |
 | 1.6 Editions | Q51-Q63 | Feature comparison, Time Travel limits, compliance, costs |
+| Bonus: Advanced Scenarios | Q64-Q103 | Cross-topic scenario questions with exam traps |
 
 ---
 
-## Bonus: Advanced Scenario Questions
-
-### Question 1
+### Question 64
 A junior DBA claims that the Query Processing Layer handles query optimization and pruning decisions before dispatching work to the compute nodes. Your manager asks you to correct this misunderstanding. Which layer actually performs query optimization and partition pruning?
 
 - A) Query Processing Layer (Virtual Warehouses)
@@ -1269,7 +1268,7 @@ A junior DBA claims that the Query Processing Layer handles query optimization a
 
 ---
 
-### Question 2
+### Question 65
 A Medium warehouse (4 credits/hour) runs continuously for 24 hours. A data engineer claims the Cloud Services bill for that day was 2 credits. What is the minimum Cloud Services consumption that must have occurred to generate a 2-credit charge?
 
 - A) 2 credits total Cloud Services consumption
@@ -1290,7 +1289,7 @@ A Medium warehouse (4 credits/hour) runs continuously for 24 hours. A data engin
 
 ---
 
-### Question 3
+### Question 66
 A query against a table was cached in the Result Cache at 9:00 AM. At 9:30 AM, a user inserts a single row into the table using a different warehouse. At 10:00 AM, the original user re-runs the identical query. What happens?
 
 - A) The Result Cache serves the stale result since the query is identical
@@ -1311,7 +1310,7 @@ A query against a table was cached in the Result Cache at 9:00 AM. At 9:30 AM, a
 
 ---
 
-### Question 4
+### Question 67
 A table has a clustering key on `order_date`. The table contains 500 micro-partitions. A query filters `WHERE order_date = '2025-06-15'`. The clustering depth is 1.2. Approximately how many partitions will Snowflake scan?
 
 - A) All 500 partitions
@@ -1332,7 +1331,7 @@ A table has a clustering key on `order_date`. The table contains 500 micro-parti
 
 ---
 
-### Question 5
+### Question 68
 A company on Standard edition wants to use multi-cluster warehouses to handle 200 concurrent BI users during morning peak hours. Their Snowflake representative says they need an upgrade. To which edition must they upgrade?
 
 - A) Standard with a larger warehouse size
@@ -1353,7 +1352,7 @@ A company on Standard edition wants to use multi-cluster warehouses to handle 20
 
 ---
 
-### Question 6
+### Question 69
 A multi-cluster warehouse has MAX_CLUSTER_COUNT=4 and uses the Economy scaling policy. During a load test, 50 queries are queued but only 2 clusters are running. A DBA asks why the 3rd cluster hasn't started. What is the most likely explanation?
 
 - A) The warehouse has reached its credit limit
@@ -1374,7 +1373,7 @@ A multi-cluster warehouse has MAX_CLUSTER_COUNT=4 and uses the Economy scaling p
 
 ---
 
-### Question 7
+### Question 70
 A company's daily Cloud Services consumption consistently exceeds the 10% threshold, costing them 15 extra credits per day. Which operational change would most effectively reduce Cloud Services charges?
 
 - A) Upgrade to a larger warehouse size
@@ -1395,7 +1394,7 @@ A company's daily Cloud Services consumption consistently exceeds the 10% thresh
 
 ---
 
-### Question 8
+### Question 71
 A data engineer proposes adding a clustering key on `customer_id` to a 10TB table that is always queried with filters on `transaction_date`. The table currently has 200,000 micro-partitions naturally clustered by ingestion date (which correlates with transaction_date). What should you advise?
 
 - A) Add the clustering key on customer_id as proposed
@@ -1416,7 +1415,7 @@ A data engineer proposes adding a clustering key on `customer_id` to a 10TB tabl
 
 ---
 
-### Question 9
+### Question 72
 A warehouse was suspended at 2:00 PM. At 2:05 PM, a user runs a query that takes 45 seconds. At 2:06 PM (while the first query is still running), another user runs a query that takes 20 seconds. Both queries finish by 2:06:30 PM. The warehouse auto-suspends again. How many credits are billed for this activity? (Warehouse size: X-Small = 1 credit/hour)
 
 - A) 0.75 credits (45 seconds)
@@ -1437,7 +1436,7 @@ A warehouse was suspended at 2:00 PM. At 2:05 PM, a user runs a query that takes
 
 ---
 
-### Question 10
+### Question 73
 A user sets `USE_CACHED_RESULT = FALSE` at the session level and runs a query. Another user (with default settings) runs the identical query 5 minutes later. Will the second user get a cached result?
 
 - A) No, because the first user disabled caching, no result was cached
@@ -1458,7 +1457,7 @@ A user sets `USE_CACHED_RESULT = FALSE` at the session level and runs a query. A
 
 ---
 
-### Question 11
+### Question 74
 A table has no explicit clustering key and data was loaded over 3 years in random order from various source systems. The table has 100,000 micro-partitions. A query filters on `region = 'EMEA'` and Snowflake scans 95,000 partitions. What is the most effective action to improve this query's performance?
 
 - A) Increase the warehouse size from Medium to X-Large
@@ -1479,7 +1478,7 @@ A table has no explicit clustering key and data was loaded over 3 years in rando
 
 ---
 
-### Question 12
+### Question 75
 An architect states that the Local Disk Cache (Warehouse Cache) persists across warehouse suspensions, so warehouses should be aggressively suspended. Is this correct?
 
 - A) Yes, the cache is stored in persistent local storage
@@ -1500,7 +1499,7 @@ An architect states that the Local Disk Cache (Warehouse Cache) persists across 
 
 ---
 
-### Question 13
+### Question 76
 A financial reporting application runs the same 50 dashboard queries every hour. The underlying tables are refreshed once daily at midnight. What caching behavior should the team expect during the day?
 
 - A) Only the first execution each hour uses compute; subsequent runs use Result Cache
@@ -1521,7 +1520,7 @@ A financial reporting application runs the same 50 dashboard queries every hour.
 
 ---
 
-### Question 14
+### Question 77
 A query joins a 5TB fact table with a 100MB dimension table. The fact table has a clustering key on `sale_date`. The query filters on `sale_date BETWEEN '2025-01-01' AND '2025-01-31'` AND `dim.category = 'Electronics'`. Which filter benefits from micro-partition pruning?
 
 - A) Both filters benefit equally from pruning
@@ -1542,7 +1541,7 @@ A query joins a 5TB fact table with a 100MB dimension table. The fact table has 
 
 ---
 
-### Question 15
+### Question 78
 An organization's Snowflake account shows the following daily metrics: Warehouse compute = 50 credits, Cloud Services = 4 credits. What is the Cloud Services bill for that day?
 
 - A) 4 credits
@@ -1563,7 +1562,7 @@ An organization's Snowflake account shows the following daily metrics: Warehouse
 
 ---
 
-### Question 16
+### Question 79
 A company needs Search Optimization Service for point-lookup queries on a 20TB table. They are currently on Standard edition. What must they do?
 
 - A) Search Optimization is available on all editions — just enable it
@@ -1584,7 +1583,7 @@ A company needs Search Optimization Service for point-lookup queries on a 20TB t
 
 ---
 
-### Question 17
+### Question 80
 A 2X-Large multi-cluster warehouse has MAX_CLUSTER_COUNT=3. During peak load, all 3 clusters are active. What is the credit consumption rate during this peak period?
 
 - A) 32 credits/hour (single cluster)
@@ -1605,7 +1604,7 @@ A 2X-Large multi-cluster warehouse has MAX_CLUSTER_COUNT=3. During peak load, al
 
 ---
 
-### Question 18
+### Question 81
 A table was loaded with data sorted by `customer_id`. Queries predominantly filter on `created_date`. Without any explicit clustering key, how effective is micro-partition pruning for date-filtered queries?
 
 - A) Highly effective because Snowflake automatically optimizes for query patterns
@@ -1626,7 +1625,7 @@ A table was loaded with data sorted by `customer_id`. Queries predominantly filt
 
 ---
 
-### Question 19
+### Question 82
 A data engineer resizes a running warehouse from X-Large to Medium (scale down). Two complex queries are currently executing. What is the immediate impact?
 
 - A) The running queries are terminated because resources are being removed
@@ -1647,7 +1646,7 @@ A data engineer resizes a running warehouse from X-Large to Medium (scale down).
 
 ---
 
-### Question 20
+### Question 83
 A Snowflake account has the following objects: 2 permanent tables, 1 transient table, and 1 temporary table — all on Enterprise edition with DATA_RETENTION_TIME_IN_DAYS set to 90 at the account level. What is the actual Time Travel retention for each?
 
 - A) All 4 objects get 90 days Time Travel
@@ -1668,24 +1667,8 @@ A Snowflake account has the following objects: 2 permanent tables, 1 transient t
 
 ---
 
-<center>
 
-## Navigation
-
-[Back to Domain 1 Study Guide](../notes/) | [Answer Key (Quick Reference)](#summary-table) | [Domain 2 Quiz →](../../2_Account_Access_and_Security/quiz/)
-
----
-
-*Generated for SnowPro Core COF-C03 preparation. Last updated: 2026.*
-*Always verify against the latest Snowflake documentation for exam accuracy.*
-
-</center>
-
----
-
-## Bonus: Advanced Scenario Questions
-
-### Question 64
+### Question 84
 A data engineering team notices their nightly ETL job takes 3 hours on a Medium warehouse but only processes 50GB of data. The Query Profile shows significant "Bytes Spilled to Remote Storage." What should they do?
 
 - A) Add a clustering key to the target table
@@ -1706,7 +1689,7 @@ A data engineering team notices their nightly ETL job takes 3 hours on a Medium 
 
 ---
 
-### Question 65
+### Question 85
 A company uses a multi-cluster warehouse with MIN=1, MAX=4, and the Standard scaling policy. During peak hours, they notice all 4 clusters running but individual queries still take 10 minutes each. Their DBA suggests switching to Economy scaling policy to save money. What is wrong with this suggestion?
 
 - A) Economy policy would make individual queries slower
@@ -1727,7 +1710,7 @@ A company uses a multi-cluster warehouse with MIN=1, MAX=4, and the Standard sca
 
 ---
 
-### Question 66
+### Question 86
 An analyst runs a query at 9:00 AM that takes 30 seconds. At 9:05 AM, they run the identical query and it returns in 50ms with no warehouse compute used. At 9:10 AM, another analyst with a different role and different warehouse runs the same query and also gets a 50ms response. What explains the third execution?
 
 - A) The second analyst's warehouse had the data in its local disk cache
@@ -1748,7 +1731,7 @@ An analyst runs a query at 9:00 AM that takes 30 seconds. At 9:05 AM, they run t
 
 ---
 
-### Question 67
+### Question 87
 A table has 10,000 micro-partitions. A query with `WHERE order_date = '2025-06-15'` shows "Partitions Scanned: 15" and "Partitions Total: 10,000" in the Query Profile. What does this tell you?
 
 - A) The query is poorly optimized and needs tuning
@@ -1769,7 +1752,7 @@ A table has 10,000 micro-partitions. A query with `WHERE order_date = '2025-06-1
 
 ---
 
-### Question 68
+### Question 88
 A warehouse is set to AUTO_SUSPEND = 60 (1 minute). An ETL pipeline sends a query every 90 seconds. What cost concern should the team address?
 
 - A) The 60-second minimum billing charge applies each time the warehouse resumes
@@ -1790,7 +1773,7 @@ A warehouse is set to AUTO_SUSPEND = 60 (1 minute). An ETL pipeline sends a quer
 
 ---
 
-### Question 69
+### Question 89
 A secure view is shared with a consumer. The consumer runs a query against the secure view and notices it takes 3x longer than a similar query on their own tables. What architectural behavior explains this?
 
 - A) Shared data is always slower due to network latency
@@ -1811,7 +1794,7 @@ A secure view is shared with a consumer. The consumer runs a query against the s
 
 ---
 
-### Question 70
+### Question 90
 A company has a table that receives 500 million new rows daily via INSERT. The table is 2TB total. They notice query performance degrading over time even though queries always filter on `event_date`. What is happening?
 
 - A) The table needs vacuuming
@@ -1832,7 +1815,7 @@ A company has a table that receives 500 million new rows daily via INSERT. The t
 
 ---
 
-### Question 71
+### Question 91
 An external table is created pointing to an S3 bucket containing Parquet files. A user attempts to run `INSERT INTO ext_table VALUES (...)`. What happens?
 
 - A) The row is inserted into S3 as a new Parquet file
@@ -1853,7 +1836,7 @@ An external table is created pointing to an S3 bucket containing Parquet files. 
 
 ---
 
-### Question 72
+### Question 92
 A company clones a production database for development testing. The clone is 5TB. Immediately after cloning, how much ADDITIONAL storage is consumed?
 
 - A) 5TB — it's a full physical copy
@@ -1874,7 +1857,7 @@ A company clones a production database for development testing. The clone is 5TB
 
 ---
 
-### Question 73
+### Question 93
 A query returns results in 200ms. The Query Profile shows "Percentage Scanned from Cache: 100%." Which cache served this data?
 
 - A) Result cache — the complete result was stored from a prior identical query
@@ -1895,7 +1878,7 @@ A query returns results in 200ms. The Query Profile shows "Percentage Scanned fr
 
 ---
 
-### Question 74
+### Question 94
 A Snowflake account on Standard edition needs to implement automatic scaling for concurrent users during peak business hours. What must they do?
 
 - A) Configure AUTO_SCALE = TRUE on their warehouse
@@ -1916,7 +1899,7 @@ A Snowflake account on Standard edition needs to implement automatic scaling for
 
 ---
 
-### Question 75
+### Question 95
 A table's DATA_RETENTION_TIME_IN_DAYS is set to 0. A user accidentally drops the table. Can it be recovered?
 
 - A) Yes — UNDROP TABLE works regardless of Time Travel settings
@@ -1937,7 +1920,7 @@ A table's DATA_RETENTION_TIME_IN_DAYS is set to 0. A user accidentally drops the
 
 ---
 
-### Question 76
+### Question 96
 A data warehouse has the following configuration: Standard scaling policy with MIN=1, MAX=10. During overnight batch processing (1 user, complex queries), 3 clusters are running. Why are multiple clusters active with only 1 user?
 
 - A) Standard policy pre-provisions clusters based on time of day
@@ -1958,7 +1941,7 @@ A data warehouse has the following configuration: Standard scaling policy with M
 
 ---
 
-### Question 77
+### Question 97
 A company is choosing between Snowflake editions. They need: column-level masking policies, 90-day Time Travel, and materialized views, but do NOT need HIPAA compliance or customer-managed keys. What is the minimum edition?
 
 - A) Standard
@@ -1979,7 +1962,7 @@ A company is choosing between Snowflake editions. They need: column-level maskin
 
 ---
 
-### Question 78
+### Question 98
 A query on a table with 50,000 micro-partitions has a WHERE clause filtering on column `region`. The Query Profile shows "Partitions Scanned: 50,000" and "Partitions Total: 50,000" (100% scan). The table has a clustering key on `transaction_date`. What is the best fix?
 
 - A) Add `region` to the clustering key or create a separate clustering key on `region`
@@ -2000,7 +1983,7 @@ A query on a table with 50,000 micro-partitions has a WHERE clause filtering on 
 
 ---
 
-### Question 79
+### Question 99
 A user creates a transient table in Enterprise edition and sets DATA_RETENTION_TIME_IN_DAYS = 30. What happens?
 
 - A) The setting is accepted — transient tables support up to 90 days on Enterprise
@@ -2021,7 +2004,7 @@ A user creates a transient table in Enterprise edition and sets DATA_RETENTION_T
 
 ---
 
-### Question 80
+### Question 100
 A Snowflake account uses a warehouse that runs 24/7 for a dashboard application. The warehouse AUTO_SUSPEND is set to 0 (never suspend). A new team member suggests setting AUTO_SUSPEND to 60 seconds to save money. What consideration is most important?
 
 - A) Dashboards will break because warehouses can't auto-resume
@@ -2042,7 +2025,7 @@ A Snowflake account uses a warehouse that runs 24/7 for a dashboard application.
 
 ---
 
-### Question 81
+### Question 101
 A company's production warehouse shows the following pattern: queries take 2 seconds normally, but every Monday at 9 AM, the first query takes 45 seconds. Subsequent Monday queries are fast again. What explains this?
 
 - A) Monday has more concurrent users causing queueing
@@ -2063,7 +2046,7 @@ A company's production warehouse shows the following pattern: queries take 2 sec
 
 ---
 
-### Question 82
+### Question 102
 A financial institution's Snowflake deployment requires: data encrypted at rest with customer-managed keys, AWS PrivateLink for network isolation, and the ability to fail over to another region in under 10 minutes. What is the minimum edition?
 
 - A) Enterprise
@@ -2084,7 +2067,7 @@ A financial institution's Snowflake deployment requires: data encrypted at rest 
 
 ---
 
-### Question 83
+### Question 103
 A table is loaded in random order (no natural date ordering). Queries always filter on `customer_id`. The table has 100,000 micro-partitions. SYSTEM$CLUSTERING_INFORMATION shows a clustering depth of 95,000 for `customer_id`. What does this mean?
 
 - A) The table is well-clustered — 95% of partitions are prunable

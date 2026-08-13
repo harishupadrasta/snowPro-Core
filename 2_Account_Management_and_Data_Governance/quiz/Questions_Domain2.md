@@ -1,7 +1,7 @@
 # Domain 2: Account Management and Data Governance - Quiz Questions
 
 ![Domain 2](https://img.shields.io/badge/Domain_2-Account_Management_&_Data_Governance-blue)
-![Questions](https://img.shields.io/badge/Questions-50-green)
+![Questions](https://img.shields.io/badge/Questions-95-green)
 ![Weight](https://img.shields.io/badge/Exam_Weight-20%25-orange)
 
 ---
@@ -914,7 +914,7 @@ What is the relationship between a resource monitor's credit quota and the monit
 
 ## Bonus: Advanced Scenario Questions
 
-### Question 56
+### Question 51
 A company sets a resource monitor to "Suspend" at 90% and "Suspend Immediately" at 100%. At 91% usage, a critical 2-hour data pipeline is running. What happens to the pipeline?
 
 - A) The pipeline is killed immediately at 91%
@@ -935,7 +935,7 @@ A company sets a resource monitor to "Suspend" at 90% and "Suspend Immediately" 
 
 ---
 
-### Question 57
+### Question 52
 An admin creates a network policy with ALLOWED_IP_LIST = '10.0.0.0/8' and assigns it to the account. They also create a user-level policy for user "JOE" with ALLOWED_IP_LIST = '192.168.1.0/24'. Joe connects from 192.168.1.50. What happens?
 
 - A) Joe connects successfully because his user-level policy allows the IP
@@ -956,7 +956,7 @@ An admin creates a network policy with ALLOWED_IP_LIST = '10.0.0.0/8' and assign
 
 ---
 
-### Question 58
+### Question 53
 A developer creates a table using the ANALYST role. Later, the Security team wants to apply a masking policy to a column. The SECURITYADMIN attempts to apply the policy but gets a privilege error. What is the issue?
 
 - A) Only ACCOUNTADMIN can apply masking policies
@@ -977,7 +977,7 @@ A developer creates a table using the ANALYST role. Later, the Security team wan
 
 ---
 
-### Question 59
+### Question 54
 A company's custom role hierarchy has ANALYST_ROLE granted to SYSADMIN. A new data engineer creates objects using ENGINEER_ROLE but forgets to grant it to SYSADMIN. What problem does this create?
 
 - A) The objects are inaccessible to ACCOUNTADMIN
@@ -998,7 +998,7 @@ A company's custom role hierarchy has ANALYST_ROLE granted to SYSADMIN. A new da
 
 ---
 
-### Question 60
+### Question 55
 A table has DATA_RETENTION_TIME_IN_DAYS = 90. An admin changes it to 0. What happens to the existing 90 days of historical data?
 
 - A) The historical data is retained for the original 90 days then purged
@@ -1019,7 +1019,7 @@ A table has DATA_RETENTION_TIME_IN_DAYS = 90. An admin changes it to 0. What hap
 
 ---
 
-### Question 61
+### Question 56
 A reader account is created by Provider A for Consumer X. Consumer X tries to access a Marketplace listing from Provider B through the reader account. What happens?
 
 - A) The access works because reader accounts can access any public listing
@@ -1040,7 +1040,7 @@ A reader account is created by Provider A for Consumer X. Consumer X tries to ac
 
 ---
 
-### Question 62
+### Question 57
 A Snowflake account has MFA enabled for all users. An ACCOUNTADMIN user loses their MFA device. They contact support, who resets their MFA. During the reset window, the user logs in without MFA. The security team is auditing logins. Which view shows this login without MFA?
 
 - A) ACCOUNT_USAGE.LOGIN_HISTORY — it records whether MFA was used for each login
@@ -1061,7 +1061,7 @@ A Snowflake account has MFA enabled for all users. An ACCOUNTADMIN user loses th
 
 ---
 
-### Question 63
+### Question 58
 A managed access schema contains tables owned by various roles. A table owner (ANALYST_ROLE) tries to grant SELECT on their table to another role. What happens?
 
 - A) The grant succeeds — owners can always grant access to their objects
@@ -1082,7 +1082,7 @@ A managed access schema contains tables owned by various roles. A table owner (A
 
 ---
 
-### Question 64
+### Question 59
 A company's Snowflake bill shows unexpected Fail-safe storage charges. They have many ETL staging tables that are modified hourly. The tables are permanent. How can they reduce Fail-safe costs?
 
 - A) Set DATA_RETENTION_TIME_IN_DAYS = 0 on staging tables
@@ -1103,7 +1103,7 @@ A company's Snowflake bill shows unexpected Fail-safe storage charges. They have
 
 ---
 
-### Question 65
+### Question 60
 A row access policy uses `CURRENT_ROLE()` to filter rows. A user has multiple roles but their primary (current) role is ANALYST. They switch to MANAGER role mid-session. How does the row access policy behave?
 
 - A) The policy uses ANALYST (the role at session start) for the entire session
@@ -1124,7 +1124,7 @@ A row access policy uses `CURRENT_ROLE()` to filter rows. A user has multiple ro
 
 ---
 
-### Question 66
+### Question 61
 A company wants to track which specific columns were read by each query for GDPR compliance. Which ACCOUNT_USAGE view provides column-level access tracking?
 
 - A) QUERY_HISTORY
@@ -1145,7 +1145,7 @@ A company wants to track which specific columns were read by each query for GDPR
 
 ---
 
-### Question 67
+### Question 62
 An admin creates a resource monitor with credit_quota = 100 and frequency = MONTHLY. On the 15th of the month, usage is at 95 credits. The admin increases the quota to 200. What happens to the current month's usage tracking?
 
 - A) Usage resets to 0 with the new quota
@@ -1166,7 +1166,7 @@ An admin creates a resource monitor with credit_quota = 100 and frequency = MONT
 
 ---
 
-### Question 68
+### Question 63
 A data masking policy is defined as: if CURRENT_ROLE() IN ('ADMIN', 'ANALYST') return val, else return '***'. A view is created by ADMIN that selects the masked column. When PUBLIC queries the view, what do they see?
 
 - A) The actual values because the view was created by ADMIN
@@ -1187,7 +1187,7 @@ A data masking policy is defined as: if CURRENT_ROLE() IN ('ADMIN', 'ANALYST') r
 
 ---
 
-### Question 69
+### Question 64
 An organization needs to prevent their ACCOUNTADMIN from accidentally running expensive queries on production data during daily work. What is the best practice?
 
 - A) Remove USAGE privilege on all warehouses from ACCOUNTADMIN
@@ -1208,7 +1208,7 @@ An organization needs to prevent their ACCOUNTADMIN from accidentally running ex
 
 ---
 
-### Question 70
+### Question 65
 A security team wants to classify all columns containing email addresses across the entire account. Which Snowflake feature automatically detects and tags sensitive data?
 
 - A) Object Tagging with manual TAG assignment
@@ -1229,7 +1229,7 @@ A security team wants to classify all columns containing email addresses across 
 
 ---
 
-### Question 71
+### Question 66
 A warehouse has a resource monitor set to "Notify and Suspend" at 100%. The warehouse is used for Snowpipe loading. What happens to Snowpipe when the warehouse is suspended?
 
 - A) Snowpipe stops loading and files queue up
@@ -1250,7 +1250,7 @@ A warehouse has a resource monitor set to "Notify and Suspend" at 100%. The ware
 
 ---
 
-### Question 72
+### Question 67
 An admin sets a database-level DATA_RETENTION_TIME_IN_DAYS = 30. A table within that database has DATA_RETENTION_TIME_IN_DAYS = 1. What is the effective retention for that table?
 
 - A) 30 days — database setting overrides table setting
@@ -1271,7 +1271,7 @@ An admin sets a database-level DATA_RETENTION_TIME_IN_DAYS = 30. A table within 
 
 ---
 
-### Question 73
+### Question 68
 A company creates a custom role called DATA_LOADER and grants it CREATE TABLE, INSERT, and USAGE on a schema. They also grant EXECUTE TASK at the account level. A task created by DATA_LOADER fails with "insufficient privileges." What's missing?
 
 - A) The DATA_LOADER role needs OWNERSHIP of the warehouse
@@ -1292,7 +1292,7 @@ A company creates a custom role called DATA_LOADER and grants it CREATE TABLE, I
 
 ---
 
-### Question 74
+### Question 69
 A HIPAA-regulated healthcare company discovers that their account is running on Enterprise edition. They store PHI (Protected Health Information) in Snowflake. Their compliance officer is concerned. What is the correct assessment?
 
 - A) Enterprise edition is compliant for HIPAA as long as data is encrypted
@@ -1313,7 +1313,7 @@ A HIPAA-regulated healthcare company discovers that their account is running on 
 
 ---
 
-### Question 75
+### Question 70
 An admin accidentally grants ACCOUNTADMIN to a service account (used for ETL pipelines). The service account has key-pair authentication but no MFA. What security risks does this create, and what's the immediate fix?
 
 - A) No risk — service accounts don't need MFA
@@ -1334,7 +1334,7 @@ An admin accidentally grants ACCOUNTADMIN to a service account (used for ETL pip
 
 ---
 
-### Question 51
+### Question 71
 A Snowflake administrator needs to audit all DDL changes (CREATE, ALTER, DROP) made in the last 60 days. Which view should they query?
 
 - A) ACCOUNT_USAGE.QUERY_HISTORY with query_type filter
@@ -1352,7 +1352,7 @@ A Snowflake administrator needs to audit all DDL changes (CREATE, ALTER, DROP) m
 
 ---
 
-### Question 52
+### Question 72
 Which scenario correctly describes privilege inheritance through the role hierarchy?
 
 - A) SYSADMIN automatically inherits all custom roles' privileges
@@ -1370,7 +1370,7 @@ Which scenario correctly describes privilege inheritance through the role hierar
 
 ---
 
-### Question 53
+### Question 73
 A network policy has ALLOWED_IP_LIST = '192.168.1.0/24' and BLOCKED_IP_LIST = '192.168.1.100'. What happens when a user connects from 192.168.1.100?
 
 - A) The connection is allowed because 192.168.1.100 is within the allowed range
@@ -1388,7 +1388,7 @@ A network policy has ALLOWED_IP_LIST = '192.168.1.0/24' and BLOCKED_IP_LIST = '1
 
 ---
 
-### Question 54
+### Question 74
 Which statement about transient tables in Snowflake is TRUE?
 
 - A) They support up to 90 days of Time Travel in Enterprise edition
@@ -1406,7 +1406,7 @@ Which statement about transient tables in Snowflake is TRUE?
 
 ---
 
-### Question 55
+### Question 75
 What is the recommended best practice for ACCOUNTADMIN usage in Snowflake?
 
 - A) Use it as the default role for daily operations
@@ -1424,9 +1424,7 @@ What is the recommended best practice for ACCOUNTADMIN usage in Snowflake?
 
 ---
 
-## Bonus: Advanced Scenario Questions
-
-### Question 1
+### Question 76
 A custom role ANALYST is granted to SYSADMIN. A custom role DATA_ENGINEER is also granted to SYSADMIN. A user has only the DATA_ENGINEER role directly granted to them. Can this user access objects owned by the ANALYST role?
 
 - A) Yes, because both roles are under SYSADMIN
@@ -1445,7 +1443,7 @@ A custom role ANALYST is granted to SYSADMIN. A custom role DATA_ENGINEER is als
 
 ---
 
-### Question 2
+### Question 77
 A table has both a masking policy on the `salary` column and a row access policy on the table. A user queries the table. In what order are these policies evaluated?
 
 - A) Masking policy first, then row access policy
@@ -1464,7 +1462,7 @@ A table has both a masking policy on the `salary` column and a row access policy
 
 ---
 
-### Question 3
+### Question 78
 A network policy at the account level allows IPs in the range 10.0.0.0/8. A separate network policy on a specific user allows only 192.168.1.0/24. The user connects from 10.0.5.50. What happens?
 
 - A) Connection succeeds because the account-level policy allows it
@@ -1483,7 +1481,7 @@ A network policy at the account level allows IPs in the range 10.0.0.0/8. A sepa
 
 ---
 
-### Question 4
+### Question 79
 A resource monitor is set with "Suspend" action at 90% and "Suspend Immediately" at 100%. The warehouse hits 90% while executing a critical 3-hour ETL job. What happens to the ETL job?
 
 - A) The ETL job is immediately terminated at 90%
@@ -1502,7 +1500,7 @@ A resource monitor is set with "Suspend" action at 90% and "Suspend Immediately"
 
 ---
 
-### Question 5
+### Question 80
 A data analyst needs to check how many queries were run on a specific warehouse in the last 30 days. They query INFORMATION_SCHEMA.QUERY_HISTORY but get incomplete results. Why?
 
 - A) INFORMATION_SCHEMA.QUERY_HISTORY only retains data for 7 days
@@ -1521,7 +1519,7 @@ A data analyst needs to check how many queries were run on a specific warehouse 
 
 ---
 
-### Question 6
+### Question 81
 A DBA runs: `GRANT SELECT ON FUTURE TABLES IN SCHEMA sales.public TO ROLE analyst;`. Then a new table `sales.public.orders` is created. The analyst role can query it. Later, the DBA runs: `REVOKE SELECT ON FUTURE TABLES IN SCHEMA sales.public FROM ROLE analyst;`. Can the analyst still query `sales.public.orders`?
 
 - A) No, revoking future grants removes access from all previously auto-granted tables
@@ -1540,7 +1538,7 @@ A DBA runs: `GRANT SELECT ON FUTURE TABLES IN SCHEMA sales.public TO ROLE analys
 
 ---
 
-### Question 7
+### Question 82
 In a managed access schema, a user creates a table using the DATA_ENGINEER role. The DATA_ENGINEER role is the object owner. Can DATA_ENGINEER grant SELECT on that table to the ANALYST role?
 
 - A) Yes, object owners can always grant privileges on their objects
@@ -1559,7 +1557,7 @@ In a managed access schema, a user creates a table using the DATA_ENGINEER role.
 
 ---
 
-### Question 8
+### Question 83
 A resource monitor has a monthly quota of 1000 credits. On March 15, the warehouse has consumed 950 credits. The "Notify" action is set at 90% and "Suspend Immediately" at 100%. What notifications have been sent so far?
 
 - A) No notifications because 950 is below 100%
@@ -1578,7 +1576,7 @@ A resource monitor has a monthly quota of 1000 credits. On March 15, the warehou
 
 ---
 
-### Question 9
+### Question 84
 A security team queries ACCOUNT_USAGE.LOGIN_HISTORY and INFORMATION_SCHEMA.LOGIN_HISTORY for the same timeframe (last 2 hours). They notice ACCOUNT_USAGE is missing recent login events that appear in INFORMATION_SCHEMA. Why?
 
 - A) ACCOUNT_USAGE doesn't track login events
@@ -1597,7 +1595,7 @@ A security team queries ACCOUNT_USAGE.LOGIN_HISTORY and INFORMATION_SCHEMA.LOGIN
 
 ---
 
-### Question 10
+### Question 85
 A company grants FUTURE grants on tables in SCHEMA A to ROLE X. They also set regular grants on existing tables in SCHEMA A to ROLE X. A new table is created, but ROLE X cannot query it. What is the most likely cause?
 
 - A) Future grants don't work with managed access schemas
@@ -1616,7 +1614,7 @@ A company grants FUTURE grants on tables in SCHEMA A to ROLE X. They also set re
 
 ---
 
-### Question 11
+### Question 86
 A user with ACCOUNTADMIN role creates a custom role MARKETING_ADMIN and grants it directly to themselves — but does NOT grant it to SYSADMIN. What governance problem does this create?
 
 - A) No problem — ACCOUNTADMIN can always access everything
@@ -1635,7 +1633,7 @@ A user with ACCOUNTADMIN role creates a custom role MARKETING_ADMIN and grants i
 
 ---
 
-### Question 12
+### Question 87
 An organization has MFA enabled for all users. They want to enforce that ACCOUNTADMIN can ONLY be used with MFA authentication — no exceptions. Which Snowflake edition is required for this enforcement?
 
 - A) Standard — MFA is available in all editions
@@ -1654,7 +1652,7 @@ An organization has MFA enabled for all users. They want to enforce that ACCOUNT
 
 ---
 
-### Question 13
+### Question 88
 A masking policy returns the original value for the ANALYST role and '***' for all other roles. A user activates the ANALYST role and creates a view that selects from the masked table. A PUBLIC role user queries the view. What does the PUBLIC user see?
 
 - A) Original values because the view was created by ANALYST
@@ -1673,7 +1671,7 @@ A masking policy returns the original value for the ANALYST role and '***' for a
 
 ---
 
-### Question 14
+### Question 89
 A DBA sets up a resource monitor with "Suspend" at 80% and "Suspend Immediately" at 100%. A multi-cluster warehouse (3 active clusters) hits the 80% threshold. What happens?
 
 - A) Only one cluster suspends
@@ -1692,7 +1690,7 @@ A DBA sets up a resource monitor with "Suspend" at 80% and "Suspend Immediately"
 
 ---
 
-### Question 15
+### Question 90
 A company needs to see which columns of which tables were accessed in the last 180 days for GDPR compliance. They query INFORMATION_SCHEMA.ACCESS_HISTORY. What result do they get?
 
 - A) Complete 180-day access history
@@ -1711,7 +1709,7 @@ A company needs to see which columns of which tables were accessed in the last 1
 
 ---
 
-### Question 16
+### Question 91
 Three custom roles exist: ROLE_A, ROLE_B, and ROLE_C. ROLE_A is granted to ROLE_B. ROLE_B is granted to ROLE_C. ROLE_C is granted to SYSADMIN. A user has ROLE_B as their active role. Which privileges does this user have?
 
 - A) Only ROLE_B privileges
@@ -1730,7 +1728,7 @@ Three custom roles exist: ROLE_A, ROLE_B, and ROLE_C. ROLE_A is granted to ROLE_
 
 ---
 
-### Question 17
+### Question 92
 A row access policy on `employees` table allows the HR role to see all rows and restricts others to see only their own department's data. The ACCOUNTADMIN role queries the table. What rows does ACCOUNTADMIN see?
 
 - A) All rows because ACCOUNTADMIN bypasses all policies
@@ -1749,7 +1747,7 @@ A row access policy on `employees` table allows the HR role to see all rows and 
 
 ---
 
-### Question 18
+### Question 93
 A company needs SSO (Single Sign-On) with SAML 2.0 for their Snowflake account. Which edition is required?
 
 - A) Enterprise or higher
@@ -1768,7 +1766,7 @@ A company needs SSO (Single Sign-On) with SAML 2.0 for their Snowflake account. 
 
 ---
 
-### Question 19
+### Question 94
 A managed access schema contains 50 tables. A new data engineer is hired and needs SELECT on all current AND future tables. The schema is owned by the DBA_ROLE. The engineer uses ENGINEER_ROLE. What is the correct approach?
 
 - A) The engineer grants themselves SELECT since they create the tables
@@ -1787,7 +1785,7 @@ A managed access schema contains 50 tables. A new data engineer is hired and nee
 
 ---
 
-### Question 20
+### Question 95
 An ACCOUNTADMIN configures a resource monitor with Notify at 70%, Suspend at 90%, and Suspend Immediately at 100%. The frequency is "Monthly" starting on the 1st. On the 15th, the warehouse has consumed 92% of the quota. What is the current state?
 
 - A) Warehouse is suspended immediately because it passed 90%
